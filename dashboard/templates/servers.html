@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Select Server — BotDash</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#080c14;--surface:#0d1420;--surface2:#111927;--border:#1e2d42;
+      --accent:#4f9eff;--accent2:#00e5c3;--success:#4fff9e;--muted:#5a7299;--text:#e8f0fe;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+    body::before{content:'';position:fixed;inset:0;pointer-events:none;
+      background-image:linear-gradient(rgba(79,158,255,.03) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(79,158,255,.03) 1px,transparent 1px);
+      background-size:48px 48px;}
+
+    .topnav{
+      padding:16px 32px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;
+      background:rgba(8,12,20,.9);backdrop-filter:blur(8px);
+      position:sticky;top:0;z-index:50;
+    }
+    .logo{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);}
+    .user-pill{
+      display:flex;align-items:center;gap:10px;
+      background:var(--surface);border:1px solid var(--border);
+      padding:6px 14px;border-radius:100px;
+    }
+    .user-pill img{width:24px;height:24px;border-radius:50%;}
+    .user-pill span{font-size:13px;font-weight:600;}
+    .logout{color:var(--muted);text-decoration:none;font-size:12px;margin-left:8px;transition:color .15s;}
+    .logout:hover{color:#ff4f6a;}
+
+    .page{max-width:900px;margin:0 auto;padding:48px 24px;}
+    h1{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;margin-bottom:6px;}
+    .sub{color:var(--muted);font-size:14px;margin-bottom:36px;}
+
+    .servers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+
+    .server-card{
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      padding:20px;display:flex;flex-direction:column;gap:14px;
+      text-decoration:none;color:inherit;
+      transition:border-color .2s,transform .15s;position:relative;overflow:hidden;
+    }
+    .server-card::before{
+      content:'';position:absolute;top:0;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,transparent,rgba(79,158,255,.2),transparent);
+    }
+    .server-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+    .server-card.inactive{opacity:.55;}
+    .server-card.inactive:hover{border-color:var(--border);transform:none;}
+
+    .card-top{display:flex;align-items:center;gap:14px;}
+    .s-icon{
+      width:48px;height:48px;border-radius:12px;
+      background:var(--surface2);border:1px solid var(--border);
+      display:flex;align-items:center;justify-content:center;
+      font-size:18px;font-weight:700;color:var(--accent);
+      overflow:hidden;flex-shrink:0;
+    }
+    .s-icon img{width:100%;height:100%;object-fit:cover;}
+    .s-name{font-size:15px;font-weight:600;}
+    .s-id{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:2px;}
+
+    .card-footer{display:flex;align-items:center;justify-content:space-between;}
+    .status-badge{
+      display:inline-flex;align-items:center;gap:5px;
+      font-size:10px;font-weight:700;font-family:'Space Mono',monospace;
+      padding:3px 10px;border-radius:20px;
+    }
+    .status-badge.active{background:rgba(79,255,158,.1);color:var(--success);}
+    .status-badge.inactive{background:rgba(90,114,153,.1);color:var(--muted);}
+    .status-badge .dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+
+    .manage-btn{
+      font-size:12px;font-weight:600;color:var(--accent);
+      display:flex;align-items:center;gap:4px;
+    }
+    .invite-btn{
+      font-size:12px;color:var(--muted);text-decoration:none;
+      border:1px solid var(--border);padding:4px 12px;border-radius:6px;
+      transition:all .15s;
+    }
+    .invite-btn:hover{color:var(--text);border-color:var(--muted);}
+
+    .section-label{
+      font-family:'Space Mono',monospace;font-size:10px;font-weight:700;
+      letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+      margin-bottom:16px;
+    }
+    .section{margin-bottom:36px;}
+  </style>
+</head>
+<body>
+  <nav class="topnav">
+    <div class="logo">⚡ BOTDASH</div>
+    <div class="user-pill">
+      <img src="https://cdn.discordapp.com/avatars/{{ user.id }}/{{ user.avatar }}.png?size=64"
+           onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" alt="">
+      <span>{{ user.username }}</span>
+      <a href="/logout" class="logout">logout</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <h1>Select a Server</h1>
+    <p class="sub">Choose a server you manage. Servers with the bot installed show live data.</p>
+
+    {% set active = guilds | selectattr('bot_added') | list %}
+    {% set inactive = guilds | rejectattr('bot_added') | list %}
+
+    {% if active %}
+    <div class="section">
+      <div class="section-label">Bot Installed ({{ active|length }})</div>
+      <div class="servers-grid">
+        {% for g in active %}
+        <a href="/dashboard/{{ g.id }}" class="server-card">
+          <div class="card-top">
+            <div class="s-icon">
+              {% if g.icon %}
+              <img src="https://cdn.discordapp.com/icons/{{ g.id }}/{{ g.icon }}.png" alt="">
+              {% else %}{{ g.name[:1] }}{% endif %}
+            </div>
+            <div>
+              <div class="s-name">{{ g.name }}</div>
+              <div class="s-id">{{ g.id }}</div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="status-badge active"><div class="dot"></div>BOT ACTIVE</div>
+            <div class="manage-btn">Manage →</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if inactive %}
+    <div class="section">
+      <div class="section-label">Bot Not Installed ({{ inactive|length }})</div>
+      <div class="servers-grid">
+        {% for g in inactive %}
+        <div class="server-card inactive">
+          <div class="card-top">
+            <div class="s-icon">
+              {% if g.icon %}
+              <img src="https://cdn.discordapp.com/icons/{{ g.id }}/{{ g.icon }}.png" alt="">
+              {% else %}{{ g.name[:1] }}{% endif %}
+            </div>
+            <div>
+              <div class="s-name">{{ g.name }}</div>
+              <div class="s-id">{{ g.id }}</div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="status-badge inactive"><div class="dot"></div>NOT INSTALLED</div>
+            <a href="https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot+applications.commands&guild_id={{ g.id }}"
+               class="invite-btn" target="_blank">Add Bot</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</body>
+</html>

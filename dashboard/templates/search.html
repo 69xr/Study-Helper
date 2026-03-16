@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}User Search{% endblock %}
+{% block page_title %}USER SEARCH{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Search{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>User Search</h1><p class="sub">Look up any user across all systems — warnings, economy, levels, tickets, audit log.</p></div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <form method="GET" style="display:flex;gap:12px;align-items:flex-end;">
+    <div class="form-group" style="flex:1;margin-bottom:0;">
+      <label class="form-label">Discord User ID</label>
+      <input class="form-control" name="uid" value="{{ uid }}" placeholder="Enter a Discord User ID (18-digit number)" autofocus>
+    </div>
+    <button type="submit" class="btn btn-primary" style="flex-shrink:0;">🔍 Search</button>
+  </form>
+</div>
+
+{% if uid and not result.get('user_id') %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">❓</div>
+    <div class="empty-title">Invalid User ID</div>
+    <div class="empty-sub">Enter a valid 18-digit Discord user ID.</div>
+  </div>
+</div>
+{% elif result.get('user_id') %}
+
+{% set uid_val = result.user_id %}
+
+<!-- Summary cards -->
+<div class="stats-row" style="margin-bottom:20px;">
+  <div class="stat-card sc-red">
+    <div class="stat-icon">⚠️</div>
+    <div class="stat-val">{{ result.warnings|length }}</div>
+    <div class="stat-lbl">Warnings</div>
+  </div>
+  <div class="stat-card sc-warn">
+    <div class="stat-icon">🪙</div>
+    <div class="stat-val">{{ '{:,}'.format(((result.economy.balance or 0) + (result.economy.bank or 0))|int) if result.economy else '0' }}</div>
+    <div class="stat-lbl">Net Worth</div>
+  </div>
+  <div class="stat-card sc-blue">
+    <div class="stat-icon">⭐</div>
+    <div class="stat-val">{{ result.levels.level if result.levels else '0' }}</div>
+    <div class="stat-lbl">Level</div>
+  </div>
+  <div class="stat-card sc-green">
+    <div class="stat-icon">🎫</div>
+    <div class="stat-val">{{ result.tickets|length }}</div>
+    <div class="stat-lbl">Tickets</div>
+  </div>
+</div>
+
+<div class="grid-2" style="gap:20px;margin-bottom:20px;">
+
+  <!-- Economy -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">🪙 Economy</span></div>
+    {% if result.economy %}
+    {% set eco = result.economy %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for label, val in [('💳 Wallet', '{:,}'.format(eco.balance or 0)),
+                             ('🏦 Bank',   '{:,}'.format(eco.bank or 0)),
+                             ('💎 Earned', '{:,}'.format(eco.total_earned or 0)),
+                             ('📅 Last Daily', (eco.last_daily or 'Never')[:10]),
+                             ('💼 Last Work',  (eco.last_work  or 'Never')[:10])] %}
+      <div style="display:flex;justify-content:space-between;padding:8px 12px;
+                  background:var(--surface2);border:1px solid var(--border);border-radius:8px;">
+        <span style="font-size:12px;color:var(--text2);">{{ label }}</span>
+        <span class="mono" style="font-size:12px;">{{ val }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:20px 0;"><div class="empty-icon">🪙</div><div class="empty-title">No economy data</div></div>
+    {% endif %}
+  </div>
+
+  <!-- Leveling -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">⭐ Leveling</span></div>
+    {% if result.levels %}
+    {% set lvl = result.levels %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for label, val in [('Level',    lvl.level),
+                             ('XP',       '{:,}'.format(lvl.xp or 0)),
+                             ('Messages', '{:,}'.format(lvl.messages or 0))] %}
+      <div style="display:flex;justify-content:space-between;padding:8px 12px;
+                  background:var(--surface2);border:1px solid var(--border);border-radius:8px;">
+        <span style="font-size:12px;color:var(--text2);">{{ label }}</span>
+        <span class="mono" style="font-size:12px;">{{ val }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:20px 0;"><div class="empty-icon">⭐</div><div class="empty-title">No level data</div></div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Warnings -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-head">
+    <span class="card-title">⚠️ Warnings ({{ result.warnings|length }})</span>
+    {% if result.warnings %}
+    <a href="{{ url_for('moderation', guild_id=guild_id) }}?q={{ uid_val }}" class="btn btn-ghost btn-xs">View in Moderation →</a>
+    {% endif %}
+  </div>
+  {% if result.warnings %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Reason</th><th>Mod ID</th><th>Date</th></tr></thead>
+      <tbody>
+      {% for w in result.warnings %}
+      <tr>
+        <td><span class="id-tag">#{{ w.id }}</span></td>
+        <td style="color:var(--text2);max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ w.reason }}</td>
+        <td><span class="mono" style="font-size:11px;">{{ w.mod_id }}</span></td>
+        <td><span class="mono" style="font-size:10px;color:var(--muted);">{{ w.created_at[:10] }}</span></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:20px 0;"><div class="empty-icon">✅</div><div class="empty-title">No warnings</div></div>
+  {% endif %}
+</div>
+
+<!-- Recent Tickets -->
+{% if result.tickets %}
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-head"><span class="card-title">🎫 Recent Tickets</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Subject</th><th>Status</th><th>Opened</th></tr></thead>
+      <tbody>
+      {% for t in result.tickets %}
+      <tr>
+        <td><span class="id-tag">#{{ '%04d'|format(t.ticket_num) }}</span></td>
+        <td style="color:var(--text2);">{{ t.subject or 'Support Ticket' }}</td>
+        <td>
+          {% if t.status == 'open' %}<span class="badge badge-green">Open</span>
+          {% elif t.status == 'closed' %}<span class="badge badge-yellow">Closed</span>
+          {% else %}<span class="badge badge-red">Deleted</span>{% endif %}
+        </td>
+        <td><span class="mono" style="font-size:10px;color:var(--muted);">{{ t.opened_at[:10] }}</span></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Audit log -->
+{% if result.audit %}
+<div class="card">
+  <div class="card-head"><span class="card-title">📋 Recent Audit Events</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Action</th><th>Mod ID</th><th>Reason</th><th>Date</th></tr></thead>
+      <tbody>
+      {% for a in result.audit %}
+      <tr>
+        <td><span class="badge badge-{{ 'red' if a.action in ['BAN','KICK'] else 'yellow' if a.action == 'WARN' else 'blue' }}">{{ a.action }}</span></td>
+        <td><span class="mono" style="font-size:11px;">{{ a.mod_id }}</span></td>
+        <td style="color:var(--text2);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ a.reason or '—' }}</td>
+        <td><span class="mono" style="font-size:10px;color:var(--muted);">{{ a.created_at[:10] }}</span></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% elif uid %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">🔍</div>
+    <div class="empty-title">No data found for {{ uid }}</div>
+    <div class="empty-sub">This user has no records in this server's database.</div>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">🔍</div>
+    <div class="empty-title">Enter a User ID above to search</div>
+    <div class="empty-sub">Right-click any user in Discord → Copy User ID, then paste it here.</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

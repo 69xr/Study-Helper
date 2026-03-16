@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Economy{% endblock %}
+{% block page_title %}ECONOMY{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Economy System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div><h1>Economy</h1><p class="sub">Manage coins, shop items, and view the leaderboard.</p></div>
+</div>
+
+<!-- Stats -->
+<div class="stats-row" style="margin-bottom:24px;">
+  <div class="stat-card sc-warn">
+    <div class="stat-icon">🪙</div>
+    <div class="stat-val">{{ '{:,}'.format(total_coins|int) }}</div>
+    <div class="stat-lbl">Total Coins in Circulation</div>
+  </div>
+  <div class="stat-card sc-blue">
+    <div class="stat-icon">👤</div>
+    <div class="stat-val">{{ total_users }}</div>
+    <div class="stat-lbl">Active Users</div>
+  </div>
+  <div class="stat-card sc-green">
+    <div class="stat-icon">🛍️</div>
+    <div class="stat-val">{{ shop|length }}</div>
+    <div class="stat-lbl">Shop Items</div>
+  </div>
+  <div class="stat-card sc-red">
+    <div class="stat-icon">⚡</div>
+    <div class="stat-val">{{ tx_today }}</div>
+    <div class="stat-lbl">Transactions Today</div>
+  </div>
+</div>
+
+<div class="grid-2" style="gap:20px;margin-bottom:20px;">
+
+  <!-- Leaderboard -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">💰 Coin Leaderboard</span></div>
+    {% if leaderboard %}
+    {% set mx = (leaderboard[0].balance + leaderboard[0].bank) %}
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      {% for row in leaderboard[:10] %}
+      {% set net = row.balance + row.bank %}
+      {% set pct = ((net / mx * 100)|int) if mx > 0 else 0 %}
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:700;">
+            {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}#{{ loop.index }}{% endif %}
+            <span class="mono" style="font-size:11px;color:var(--muted);margin-left:4px;">{{ row.user_id }}</span>
+          </span>
+          <span class="badge badge-yellow">{{ '{:,}'.format(net) }} 🪙</span>
+        </div>
+        <div style="height:3px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:{{ pct }}%;background:linear-gradient(90deg,var(--warning),var(--accent));border-radius:3px;"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:28px 0;"><div class="empty-icon">🪙</div><div class="empty-title">No economy data yet</div></div>
+    {% endif %}
+  </div>
+
+  <!-- Give coins + Shop management -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <!-- Give coins -->
+    <div class="card">
+      <div class="card-head"><span class="card-title">💸 Give Coins</span></div>
+      <div class="form-group">
+        <label class="form-label">User ID</label>
+        <input class="form-control" id="give-uid" placeholder="Discord User ID">
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Amount</label>
+        <input class="form-control" id="give-amt" type="number" min="1" placeholder="e.g. 500">
+      </div>
+      <button class="btn btn-warning" style="margin-top:14px;width:100%;justify-content:center;" onclick="giveCoins()">
+        🪙 Give Coins
+      </button>
+    </div>
+
+    <!-- Add shop item -->
+    <div class="card">
+      <div class="card-head"><span class="card-title">➕ Add Shop Item</span></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input class="form-control" id="item-name" placeholder="Item name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Price 🪙</label>
+          <input class="form-control" id="item-price" type="number" min="1" placeholder="1000">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Description</label>
+          <input class="form-control" id="item-desc" placeholder="Optional description">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Stock (-1 = ∞)</label>
+          <input class="form-control" id="item-stock" type="number" value="-1">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px;width:100%;justify-content:center;" onclick="addItem()">
+        Add to Shop
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Shop items table -->
+<div class="card">
+  <div class="card-head"><span class="card-title">🛍️ Shop Items ({{ shop|length }})</span></div>
+  {% if shop %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Item</th><th>Price</th><th>Stock</th><th>Role Reward</th><th>Action</th></tr></thead>
+      <tbody id="shop-tbody">
+      {% for item in shop %}
+      <tr id="shop-{{ item.id }}">
+        <td><span class="id-tag">{{ item.id }}</span></td>
+        <td>
+          <span style="font-size:16px;">{{ item.emoji }}</span>
+          <strong style="margin-left:6px;">{{ item.name }}</strong>
+          {% if item.description %}<div style="font-size:11px;color:var(--muted);">{{ item.description }}</div>{% endif %}
+        </td>
+        <td><span class="badge badge-yellow">{{ '{:,}'.format(item.price) }} 🪙</span></td>
+        <td>
+          {% if item.stock == -1 %}<span class="badge badge-green">Unlimited</span>
+          {% elif item.stock > 0 %}<span class="badge badge-blue">{{ item.stock }} left</span>
+          {% else %}<span class="badge badge-red">Out of stock</span>{% endif %}
+        </td>
+        <td>
+          {% if item.role_id %}<span class="id-tag">{{ item.role_id }}</span>
+          {% else %}<span style="color:var(--muted);">—</span>{% endif %}
+        </td>
+        <td><button class="btn btn-danger btn-xs" onclick="delItem({{ item.id }})">Delete</button></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">🛍️</div>
+    <div class="empty-title">Shop is empty</div>
+    <div class="empty-sub">Add items using the form above or <span class="id-tag">/eco additem</span> in Discord.</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const GUILD = "{{ guild_id }}";
+async function giveCoins() {
+  const uid = document.getElementById('give-uid').value.trim();
+  const amt = parseInt(document.getElementById('give-amt').value);
+  if (!uid || !amt || amt < 1) { toast('Fill in user ID and amount.','err'); return; }
+  const r = await apiPost(`/dashboard/${GUILD}/economy/give`, {user_id: uid, amount: amt});
+  if (r.ok) toast(`Gave ${amt.toLocaleString()} 🪙 to ${uid}`);
+  else toast(r.error || 'Failed','err');
+}
+async function addItem() {
+  const name  = document.getElementById('item-name').value.trim();
+  const price = parseInt(document.getElementById('item-price').value);
+  const desc  = document.getElementById('item-desc').value.trim();
+  const stock = parseInt(document.getElementById('item-stock').value) || -1;
+  if (!name || !price || price < 1) { toast('Name and valid price required.','err'); return; }
+  const r = await apiPost(`/dashboard/${GUILD}/economy/shop/add`, {name, price, description:desc, stock, emoji:'🛍️'});
+  if (r.ok) { toast('Item added to shop!'); setTimeout(() => location.reload(), 1000); }
+  else toast(r.error || 'Failed','err');
+}
+async function delItem(id) {
+  if (!confirm(`Delete shop item #${id}?`)) return;
+  const r = await apiPost(`/dashboard/${GUILD}/economy/shop/delete/${id}`);
+  if (r.ok) { document.getElementById(`shop-${id}`)?.remove(); toast(`Item #${id} deleted`); }
+  else toast(r.error || 'Failed','err');
+}
+</script>
+{% endblock %}

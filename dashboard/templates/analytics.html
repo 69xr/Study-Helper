@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}ANALYTICS{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Command Usage{% endblock %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Analytics</h1>
+    <p class="sub">Command usage statistics for this server.</p>
+  </div>
+  <div class="page-actions">
+    {% for p in [7, 14, 30, 90] %}
+    <a href="?period={{ p }}" class="btn {% if period==p %}btn-primary{% else %}btn-ghost{% endif %} btn-sm">{{ p }}d</a>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Stats row -->
+<div class="stats-row" style="margin-bottom:24px;">
+  <div class="stat-card sc-blue">
+    <div class="stat-icon">⚡</div>
+    <div class="stat-val">{{ total_cmds }}</div>
+    <div class="stat-lbl">Total Commands</div>
+  </div>
+  <div class="stat-card sc-green">
+    <div class="stat-icon">👤</div>
+    <div class="stat-val">{{ unique_users }}</div>
+    <div class="stat-lbl">Unique Users</div>
+  </div>
+  <div class="stat-card sc-warn">
+    <div class="stat-icon">📅</div>
+    <div class="stat-val">{{ today_cmds }}</div>
+    <div class="stat-lbl">Today</div>
+  </div>
+  <div class="stat-card sc-red">
+    <div class="stat-icon">📊</div>
+    <div class="stat-val">{{ top_cmds|length }}</div>
+    <div class="stat-lbl">Unique Cmds</div>
+  </div>
+</div>
+
+<!-- Daily chart -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-head">
+    <span class="card-title">Daily Usage — Last {{ period }} Days</span>
+  </div>
+  <canvas id="dailyChart" style="max-height:240px;"></canvas>
+</div>
+
+<div class="grid-2" style="gap:20px;">
+
+  <!-- Top commands -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">Top Commands</span></div>
+    {% if top_cmds %}
+    {% set mx = top_cmds[0].uses %}
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      {% for c in top_cmds %}
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);">/{{ c.command }}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:80px;height:4px;background:var(--surface2);border-radius:4px;overflow:hidden;">
+              <div style="height:100%;width:{{ (c.uses/mx*100)|int }}%;background:linear-gradient(90deg,var(--accent),var(--accent-g));border-radius:4px;"></div>
+            </div>
+            <span class="badge badge-blue" style="min-width:50px;justify-content:center;">{{ c.uses }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:28px 0;">
+      <div class="empty-icon">📊</div>
+      <div class="empty-title">No data yet</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Hourly heatmap -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">Activity by Hour (Last 7 Days)</span></div>
+    {% if hourly %}
+    <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:5px;">
+      {% set max_hr = hourly|max(attribute='uses') %}
+      {% for hr in hourly %}
+      {% set pct = (hr.uses / max_hr.uses * 100)|int %}
+      <div title="{{ hr.hr }}:00 · {{ hr.uses }} uses"
+           style="aspect-ratio:1;border-radius:5px;cursor:default;
+                  background:rgba(61,139,255,{{ (pct/100) * 0.8 + 0.05 }});
+                  border:1px solid rgba(61,139,255,{{ (pct/100)*0.4 }});
+                  display:flex;align-items:center;justify-content:center;
+                  font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.7);">
+        {{ hr.hr }}
+      </div>
+      {% endfor %}
+    </div>
+    <p style="margin-top:10px;font-size:11px;color:var(--muted);">Darker = more usage. Hours are UTC.</p>
+    {% else %}
+    <div class="empty-state" style="padding:28px 0;">
+      <div class="empty-icon">⏰</div>
+      <div class="empty-title">No hourly data yet</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const daily = {{ daily | tojson }};
+
+const chartDefaults = {
+  color: '#8aafc8',
+  borderColor: '#1a2d45',
+};
+Chart.defaults.color = chartDefaults.color;
+Chart.defaults.borderColor = chartDefaults.borderColor;
+
+if (daily.length > 0) {
+  new Chart(document.getElementById('dailyChart'), {
+    type: 'bar',
+    data: {
+      labels: daily.map(d => d.day),
+      datasets: [{
+        label: 'Commands',
+        data: daily.map(d => d.uses),
+        backgroundColor: 'rgba(61,139,255,0.25)',
+        borderColor: '#3d8bff',
+        borderWidth: 1.5,
+        borderRadius: 5,
+        hoverBackgroundColor: 'rgba(61,139,255,0.45)',
+      }, {
+        label: 'Trend',
+        data: daily.map(d => d.uses),
+        type: 'line',
+        borderColor: '#00d4aa',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.4,
+        fill: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f1929',
+          borderColor: '#243d58',
+          borderWidth: 1,
+          padding: 10,
+          titleFont: { family: 'Space Mono', size: 11 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+        }
+      },
+      scales: {
+        x: { grid: { color: '#1a2d45' }, ticks: { font: { family: 'Space Mono', size: 10 } } },
+        y: { grid: { color: '#1a2d45' }, ticks: { font: { family: 'Space Mono', size: 10 } }, beginAtZero: true }
+      }
+    }
+  });
+} else {
+  document.getElementById('dailyChart').parentElement.innerHTML +=
+    '<div class="empty-state" style="padding:32px 0;"><div class="empty-icon">📊</div><div class="empty-title">No command data yet</div></div>';
+  document.getElementById('dailyChart').style.display = 'none';
+}
+</script>
+{% endblock %}

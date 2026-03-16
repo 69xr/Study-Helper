@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Role Panels{% endblock %}
+{% block page_title %}ROLE PANELS{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Self-Role Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Role Panels</h1>
+    <p class="sub">{{ panels|length }} panel{{ 's' if panels|length != 1 }} active. Create new ones via <span class="id-tag">/setuprole</span> in Discord.</p>
+  </div>
+</div>
+
+{% if panels %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;">
+  {% for p in panels %}
+  <div class="card" id="panel-{{ p.id }}" style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:800;font-size:15px;margin-bottom:3px;">{{ p.title }}</div>
+        <div style="font-size:12px;color:var(--text2);word-break:break-word;">{{ p.description or '—' }}</div>
+      </div>
+      <span class="id-tag" style="flex-shrink:0;">#{{ p.id }}</span>
+    </div>
+
+    <!-- Color swatch -->
+    <div style="height:3px;border-radius:2px;background:#{{ '%06x' % p.color }};opacity:.7;"></div>
+
+    <!-- Roles -->
+    <div>
+      <div style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.14em;
+                  text-transform:uppercase;color:var(--muted);margin-bottom:8px;">
+        Roles ({{ p.entries|length }})
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        {% for e in p.entries %}
+        <span class="badge badge-blue" style="gap:5px;">
+          {% if e.emoji %}{{ e.emoji }}{% endif %}
+          <span class="mono" style="font-size:10px;">{{ e.role_id }}</span>
+        </span>
+        {% else %}
+        <span style="color:var(--muted);font-size:12px;">No roles attached</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                border-top:1px solid var(--border);padding-top:12px;margin-top:auto;">
+      <div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);">ch: {{ p.channel_id }}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);">{{ p.created_at[:10] }}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="delPanel({{ p.id }}, '{{ p.title|e }}')">
+        Delete
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">🎭</div>
+    <div class="empty-title">No role panels yet</div>
+    <div class="empty-sub">
+      Use <span class="id-tag">/setuprole</span> in Discord to create an interactive self-role panel.
+      It will appear here once created.
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const GUILD = "{{ guild_id }}";
+async function delPanel(id, title) {
+  if (!confirm(`Delete panel #${id} "${title}"?\nThis will remove the Discord message too.`)) return;
+  const r = await apiPost(`/dashboard/${GUILD}/roles/delete/${id}`);
+  if (r.ok) { document.getElementById(`panel-${id}`)?.remove(); toast(`Panel #${id} deleted`); }
+  else toast(r.error || 'Failed', 'err');
+}
+</script>
+{% endblock %}

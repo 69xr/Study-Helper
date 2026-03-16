@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Tickets{% endblock %}
+{% block page_title %}TICKETS{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Support Tickets{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Support Tickets</h1>
+    <p class="sub">{{ (counts.open or 0) }} open · {{ (counts.closed or 0) }} closed · {{ (counts.deleted or 0) }} deleted</p>
+  </div>
+</div>
+
+<!-- Stats row -->
+<div class="stats-row" style="margin-bottom:20px;">
+  <div class="stat-card sc-green">
+    <div class="stat-icon">🟢</div>
+    <div class="stat-val">{{ counts.open or 0 }}</div>
+    <div class="stat-lbl">Open</div>
+  </div>
+  <div class="stat-card sc-warn">
+    <div class="stat-icon">🔒</div>
+    <div class="stat-val">{{ counts.closed or 0 }}</div>
+    <div class="stat-lbl">Closed</div>
+  </div>
+  <div class="stat-card sc-red">
+    <div class="stat-icon">🗑️</div>
+    <div class="stat-val">{{ counts.deleted or 0 }}</div>
+    <div class="stat-lbl">Deleted</div>
+  </div>
+  <div class="stat-card sc-blue">
+    <div class="stat-icon">🎫</div>
+    <div class="stat-val">{{ settings.get('counter', 0) }}</div>
+    <div class="stat-lbl">Total Created</div>
+  </div>
+</div>
+
+<div class="grid-2" style="gap:20px;margin-bottom:20px;">
+  <!-- Ticket system config (quick access) -->
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">⚙ Ticket Config</span>
+      <a href="{{ url_for('guild_settings', guild_id=guild_id) }}" class="btn btn-ghost btn-xs">Full Settings →</a>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% set cfg = [
+        ('Category',      settings.get('category_id')),
+        ('Log Channel',   settings.get('log_channel')),
+        ('Support Role',  settings.get('support_role')),
+        ('Max Open',      settings.get('max_open', 1)),
+      ] %}
+      {% for label, val in cfg %}
+      <div style="display:flex;justify-content:space-between;align-items:center;
+                  padding:9px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;">
+        <span style="font-size:12px;font-weight:600;color:var(--text2);">{{ label }}</span>
+        <span class="id-tag">{{ val or 'Not set' }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <p style="margin-top:12px;font-size:11px;color:var(--muted);">
+      Configure via <span class="id-tag">/ticketsetup</span> in Discord or on the
+      <a href="{{ url_for('guild_settings', guild_id=guild_id) }}" style="color:var(--accent);">Settings page</a>.
+      Use <span class="id-tag">/ticket panel</span> to post the open button.
+    </p>
+  </div>
+
+  <!-- Status filter -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">Filter by Status</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <a href="?" class="btn {% if not status %}btn-primary{% else %}btn-ghost{% endif %}"
+         style="justify-content:space-between;">
+        All Tickets
+        <span class="badge badge-muted">{{ (counts.open or 0)+(counts.closed or 0)+(counts.deleted or 0) }}</span>
+      </a>
+      <a href="?status=open" class="btn {% if status=='open' %}btn-success{% else %}btn-ghost{% endif %}"
+         style="justify-content:space-between;">
+        🟢 Open
+        <span class="badge badge-green">{{ counts.open or 0 }}</span>
+      </a>
+      <a href="?status=closed" class="btn {% if status=='closed' %}btn-warning{% else %}btn-ghost{% endif %}"
+         style="justify-content:space-between;">
+        🔒 Closed
+        <span class="badge badge-yellow">{{ counts.closed or 0 }}</span>
+      </a>
+      <a href="?status=deleted" class="btn {% if status=='deleted' %}btn-danger{% else %}btn-ghost{% endif %}"
+         style="justify-content:space-between;">
+        🗑️ Deleted
+        <span class="badge badge-red">{{ counts.deleted or 0 }}</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Tickets table -->
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">Ticket Log{% if status %} — {{ status.upper() }}{% endif %}</span>
+    <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">{{ total_count }} ticket{{ 's' if total_count != 1 }}</span>
+  </div>
+  {% if tickets %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>#</th><th>User ID</th><th>Subject</th><th>Status</th>
+        <th>Claimed By</th><th>Opened</th><th>Closed</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+      {% for t in tickets %}
+      <tr>
+        <td><span class="id-tag">#{{ '%04d' % t.ticket_num }}</span></td>
+        <td><span class="mono" style="font-size:11px;">{{ t.user_id }}</span></td>
+        <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2);">
+          {{ t.subject or 'Support Ticket' }}
+        </td>
+        <td>
+          {% if t.status == 'open' %}<span class="badge badge-green">Open</span>
+          {% elif t.status == 'closed' %}<span class="badge badge-yellow">Closed</span>
+          {% else %}<span class="badge badge-red">Deleted</span>{% endif %}
+        </td>
+        <td>
+          {% if t.claimed_by %}
+          <span class="mono" style="font-size:11px;color:var(--accent);">{{ t.claimed_by }}</span>
+          {% else %}<span style="color:var(--muted);">—</span>{% endif %}
+        </td>
+        <td><span style="font-family:var(--mono);font-size:10px;color:var(--muted);">{{ t.opened_at[:16].replace('T',' ') }}</span></td>
+        <td>
+          {% if t.closed_at %}
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted);">{{ t.closed_at[:16].replace('T',' ') }}</span>
+          {% else %}<span style="color:var(--muted);">—</span>{% endif %}
+        </td>
+        <td>
+          <a href="{{ url_for('ticket_transcript', guild_id=guild_id, ticket_id=t.id) }}"
+             class="btn btn-ghost btn-xs" target="_blank">📄 Transcript</a>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total_pages > 1 %}
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;flex-wrap:wrap;gap:10px;">
+    <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">
+      Page {{ page }} / {{ total_pages }} · {{ total_count }} total
+    </span>
+    <div style="display:flex;gap:8px;">
+      {% if page > 1 %}<a href="?page={{ page-1 }}&status={{ status }}" class="btn btn-ghost btn-sm">← Prev</a>{% endif %}
+      {% if page < total_pages %}<a href="?page={{ page+1 }}&status={{ status }}" class="btn btn-ghost btn-sm">Next →</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">🎫</div>
+    <div class="empty-title">{% if status %}No {{ status }} tickets{% else %}No tickets yet{% endif %}</div>
+    <div class="empty-sub">
+      Use <span class="id-tag">/ticket panel</span> in Discord to post the open-ticket button so users can create tickets.
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

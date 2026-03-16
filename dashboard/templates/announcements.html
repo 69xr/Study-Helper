@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Announcements{% endblock %}
+{% block page_title %}ANNOUNCEMENTS{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Send Message{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Announcements</h1>
+    <p class="sub">Send formatted Discord embeds to any channel directly from here.</p>
+  </div>
+</div>
+
+<div class="grid-2" style="gap:20px;">
+
+  <!-- Compose -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">Compose</span></div>
+
+    <div class="form-group">
+      <label class="form-label">Channel</label>
+      <select class="form-control" id="a-ch">
+        <option value="">— Select a text channel —</option>
+        {% for ch in channels %}
+        <option value="{{ ch.id }}"># {{ ch.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Title</label>
+      <input class="form-control" id="a-title" placeholder="Announcement title…" oninput="preview()">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Message</label>
+      <textarea class="form-control" id="a-msg" rows="5"
+                placeholder="Write your announcement… Markdown is supported."
+                oninput="preview()"></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Embed Color</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input type="color" id="a-picker" value="#3d8bff"
+                 style="width:46px;height:40px;border-radius:8px;border:1px solid var(--border);background:none;cursor:pointer;padding:3px;"
+                 oninput="syncHex(this.value)">
+          <input class="form-control" id="a-hex" value="#3d8bff" placeholder="#3d8bff"
+                 oninput="syncPicker(this.value)"
+                 style="font-family:var(--mono);flex:1;">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Ping</label>
+        <select class="form-control" id="a-ping">
+          <option value="none">No ping</option>
+          <option value="here">@here</option>
+          <option value="everyone">@everyone</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="send-btn" class="btn btn-primary"
+            style="width:100%;justify-content:center;margin-top:22px;font-size:14px;"
+            onclick="sendMsg()">📢 Send Announcement</button>
+  </div>
+
+  <!-- Preview + history -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <!-- Discord-style embed preview -->
+    <div class="card">
+      <div class="card-head"><span class="card-title">Live Preview</span></div>
+      <div style="background:#313338;border-radius:10px;padding:16px;">
+        <div style="display:flex;gap:0;">
+          <div id="pbar" style="width:4px;flex-shrink:0;border-radius:3px;background:#3d8bff;margin-right:12px;"></div>
+          <div style="flex:1;min-width:0;">
+            <div id="ptitle" style="font-weight:700;font-size:15px;color:#fff;margin-bottom:6px;font-family:sans-serif;">
+              📢 Announcement
+            </div>
+            <div id="pdesc" style="font-size:13.5px;color:#dbdee1;line-height:1.55;white-space:pre-wrap;word-break:break-word;font-family:sans-serif;">
+              Your message will appear here…
+            </div>
+            <div style="font-size:11px;color:#80848e;margin-top:10px;font-family:sans-serif;">
+              Sent by {{ user.username }} via Dashboard
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent -->
+    <div class="card">
+      <div class="card-head"><span class="card-title">Recent</span></div>
+      {% if recent %}
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for r in recent %}
+        <div style="padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span style="font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              {{ (r.reason or '').split(': ',1)[-1] or '—' }}
+            </span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--muted);flex-shrink:0;">
+              {{ r.created_at[:16].replace('T',' ') }}
+            </span>
+          </div>
+          {% if r.extra %}
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {{ r.extra[:100] }}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:24px 0;">
+        <div class="empty-icon">📢</div>
+        <div class="empty-title">No announcements yet</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const GUILD = "{{ guild_id }}";
+
+function preview() {
+  document.getElementById('ptitle').textContent = document.getElementById('a-title').value || '📢 Announcement';
+  document.getElementById('pdesc').textContent  = document.getElementById('a-msg').value   || 'Your message will appear here…';
+}
+function syncHex(v) { document.getElementById('a-hex').value = v; document.getElementById('pbar').style.background = v; }
+function syncPicker(v) { if (/^#[0-9a-fA-F]{6}$/.test(v)) { document.getElementById('a-picker').value = v; document.getElementById('pbar').style.background = v; } }
+
+async function sendMsg() {
+  const ch  = document.getElementById('a-ch').value;
+  const ttl = document.getElementById('a-title').value.trim() || 'Announcement';
+  const msg = document.getElementById('a-msg').value.trim();
+  const clr = document.getElementById('a-hex').value.trim().replace('#','') || '3d8bff';
+  const png = document.getElementById('a-ping').value;
+
+  if (!ch)  { toast('Select a channel first.', 'err'); return; }
+  if (!msg) { toast('Message cannot be empty.', 'err'); return; }
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+
+  const r = await apiPost(`/dashboard/${GUILD}/announcements`, {channel_id:ch, title:ttl, message:msg, color:clr, ping:png});
+  btn.disabled = false; btn.innerHTML = '📢 Send Announcement';
+
+  if (r.ok) {
+    toast('Announcement sent!');
+    document.getElementById('a-title').value = '';
+    document.getElementById('a-msg').value   = '';
+    preview();
+    setTimeout(() => location.reload(), 1400);
+  } else {
+    toast(r.error || 'Failed to send', 'err');
+  }
+}
+</script>
+{% endblock %}

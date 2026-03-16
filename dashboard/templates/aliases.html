@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Aliases{% endblock %}
+{% block page_title %}ALIASES{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Command Aliases{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Command Aliases</h1>
+    <p class="sub">Create shortcuts for slash commands. Type the alias word in chat and the command runs instantly.</p>
+  </div>
+</div>
+
+<div class="alert alert-info" style="margin-bottom:20px;padding:14px 18px;background:rgba(61,139,255,.1);border:1px solid rgba(61,139,255,.3);border-radius:10px;font-size:13px;">
+  ⚡ <strong>How it works:</strong> Set alias <code style="background:rgba(61,139,255,.2);padding:1px 6px;border-radius:4px;">a</code> → <code style="background:rgba(61,139,255,.2);padding:1px 6px;border-radius:4px;">/avatar</code>.
+  When a member types <strong>a</strong> in any channel, the bot deletes their message and runs <strong>/avatar</strong> automatically.
+  No prefix. No slash. Just the word.
+</div>
+
+<div class="grid-2" style="gap:20px;margin-bottom:20px;">
+
+  <!-- Add alias -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">➕ Create Alias</span></div>
+    <div class="form-group">
+      <label class="form-label">Alias Word</label>
+      <input class="form-control" id="a-alias" placeholder="e.g.  a  r  bal  lb  w">
+      <span class="form-hint">One word. When typed in chat → command runs.</span>
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label">Command to Run</label>
+      <select class="form-control" id="a-cmd">
+        <option value="">— Select a command —</option>
+        {% for cmd in all_cmds %}
+        <option value="{{ cmd }}">/{{ cmd }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%;justify-content:center;" onclick="addAlias()">
+      Create Alias
+    </button>
+  </div>
+
+  <!-- Quick examples -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">💡 Popular Aliases</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      {% set examples = [
+        ('a',    'avatar',      'View avatar'),
+        ('r',    'rank',        'Check XP rank'),
+        ('bal',  'balance',     'Check coins'),
+        ('lb',   'leaderboard', 'Coin leaderboard'),
+        ('lvls', 'levels',      'Level leaderboard'),
+        ('w',    'warn',        'Warn a member'),
+        ('t',    'ticket open', 'Open a ticket'),
+        ('s',    'slots',       'Play slots'),
+      ] %}
+      {% for alias, cmd, desc in examples %}
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <code style="background:var(--accent);color:#fff;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:700;">{{ alias }}</code>
+          <span style="color:var(--muted);font-size:12px;">→</span>
+          <span style="font-family:var(--mono);font-size:12px;color:var(--accent);">/{{ cmd }}</span>
+          <span style="font-size:11px;color:var(--muted);">{{ desc }}</span>
+        </div>
+        <button class="btn btn-ghost btn-xs" onclick="quickAdd('{{ alias }}','{{ cmd }}')">Add</button>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Active aliases table -->
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">Active Aliases ({{ aliases|length }})</span>
+    {% if aliases %}
+    <span style="font-size:11px;color:var(--muted);">Members type the alias word → command runs</span>
+    {% endif %}
+  </div>
+  {% if aliases %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Alias</th><th>→ Runs Command</th><th>Created</th><th>Action</th>
+      </tr></thead>
+      <tbody id="alias-tbody">
+      {% for a in aliases %}
+      <tr id="arow-{{ a.alias }}">
+        <td>
+          <code style="background:var(--accent);color:#fff;padding:3px 10px;border-radius:6px;font-size:13px;font-weight:700;">{{ a.alias }}</code>
+        </td>
+        <td>
+          <span style="font-family:var(--mono);font-size:13px;color:var(--accent);">/{{ a.command }}</span>
+        </td>
+        <td>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">{{ a.created_at[:10] }}</span>
+        </td>
+        <td>
+          <button class="btn btn-danger btn-xs" onclick="deleteAlias('{{ a.alias }}')">Delete</button>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">⚡</div>
+    <div class="empty-title">No aliases yet</div>
+    <div class="empty-sub">Add one above or click "Add" on a popular example.</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const GUILD = "{{ guild_id }}";
+
+async function addAlias() {
+  const alias = document.getElementById('a-alias').value.trim().replace(/^[!/]+/, '');
+  const cmd   = document.getElementById('a-cmd').value;
+  if (!alias) { toast('Enter an alias word.', 'err'); return; }
+  if (!cmd)   { toast('Select a command.',    'err'); return; }
+  const r = await apiPost(`/dashboard/${GUILD}/aliases/add`, {alias, command: cmd});
+  if (r.ok) { toast(`"${alias}" → /${cmd} created!`); setTimeout(() => location.reload(), 600); }
+  else toast(r.error || 'Failed', 'err');
+}
+
+async function quickAdd(alias, cmd) {
+  const r = await apiPost(`/dashboard/${GUILD}/aliases/add`, {alias, command: cmd});
+  if (r.ok) { toast(`"${alias}" → /${cmd} created!`); setTimeout(() => location.reload(), 600); }
+  else toast(r.error || 'Failed', 'err');
+}
+
+async function deleteAlias(alias) {
+  if (!confirm(`Delete alias "${alias}"?`)) return;
+  const r = await apiPost(`/dashboard/${GUILD}/aliases/delete/${alias}`);
+  if (r.ok) { document.getElementById(`arow-${alias}`)?.remove(); toast(`"${alias}" deleted`); }
+  else toast(r.error || 'Failed', 'err');
+}
+</script>
+{% endblock %}

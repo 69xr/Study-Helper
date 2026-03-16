@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Blacklist{% endblock %}
+{% block page_title %}BLACKLIST{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Bot-Wide User Blacklist{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Blacklist</h1>
+    <p class="sub">{{ entries|length }} user{{ 's' if entries|length != 1 }} blacklisted bot-wide.
+      {% if not is_owner %}Editing requires bot owner access.{% endif %}
+    </p>
+  </div>
+</div>
+
+{% if is_owner %}
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-head"><span class="card-title">Add User to Blacklist</span></div>
+  <div class="form-row">
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label">Discord User ID</label>
+      <input class="form-control" id="bl-uid" placeholder="e.g. 123456789012345678">
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label">Reason</label>
+      <input class="form-control" id="bl-reason" placeholder="Why is this user being blacklisted?">
+    </div>
+  </div>
+  <button class="btn btn-danger" style="margin-top:14px;" onclick="addBL()">⊘ Blacklist User</button>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">Blacklisted Users ({{ entries|length }})</span>
+  </div>
+  {% if entries %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>User ID</th><th>Reason</th><th>Added By</th><th>Date</th>
+        {% if is_owner %}<th>Action</th>{% endif %}
+      </tr></thead>
+      <tbody id="bl-tbody">
+      {% for e in entries %}
+      <tr id="bl-{{ e.user_id }}">
+        <td><span class="id-tag">{{ e.user_id }}</span></td>
+        <td style="color:var(--text2);">{{ e.reason }}</td>
+        <td><span class="mono" style="font-size:11px;color:var(--muted);">{{ e.added_by }}</span></td>
+        <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted);">{{ e.added_at[:10] }}</span></td>
+        {% if is_owner %}
+        <td>
+          <button class="btn btn-success btn-xs" onclick="removeBL({{ e.user_id }})">Unblacklist</button>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">✓</div>
+    <div class="empty-title">Blacklist is empty</div>
+    <div class="empty-sub">No users are currently blacklisted from the bot.</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const GUILD = "{{ guild_id }}";
+
+async function addBL() {
+  const uid    = document.getElementById('bl-uid').value.trim();
+  const reason = document.getElementById('bl-reason').value.trim() || 'No reason';
+  if (!uid) { toast('Enter a user ID', 'err'); return; }
+  const r = await apiPost(`/dashboard/${GUILD}/blacklist/add`, {user_id: uid, reason});
+  if (r.ok) { toast(`User ${uid} blacklisted`); location.reload(); }
+  else toast(r.error || 'Failed', 'err');
+}
+
+async function removeBL(uid) {
+  if (!confirm(`Remove ${uid} from the blacklist?`)) return;
+  const r = await apiPost(`/dashboard/${GUILD}/blacklist/remove/${uid}`);
+  if (r.ok) { document.getElementById(`bl-${uid}`)?.remove(); toast(`${uid} removed from blacklist`); }
+  else toast(r.error || 'Failed', 'err');
+}
+</script>
+{% endblock %}

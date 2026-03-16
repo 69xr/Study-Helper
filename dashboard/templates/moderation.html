@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Moderation{% endblock %}
+{% block page_title %}MODERATION{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Warnings{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Warnings</h1>
+    <p class="sub">{{ total_count }} warning{{ 's' if total_count != 1 }} on record.</p>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-danger" onclick="clearAllWarns()">⊘ Clear All</button>
+  </div>
+</div>
+
+<div class="grid-2" style="gap:20px;">
+
+  <!-- Main table -->
+  <div style="grid-column: 1 / -1;">
+    <div class="card">
+      <!-- Search bar -->
+      <form method="get" style="display:flex;gap:10px;margin-bottom:18px;">
+        <input class="form-control" name="q" value="{{ q }}" placeholder="Search by User ID or reason…" style="max-width:380px;">
+        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+        {% if q %}<a href="?" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+      </form>
+
+      {% if warnings %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>ID</th><th>User ID</th><th>Mod ID</th>
+            <th>Reason</th><th>Date</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="warn-tbody">
+          {% for w in warnings %}
+          <tr id="wr-{{ w.id }}">
+            <td><span class="id-tag">{{ w.id }}</span></td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="mono" style="font-size:12px;">{{ w.user_id }}</span>
+                <button class="btn btn-ghost btn-xs" onclick="clearUser({{ w.user_id }})" title="Clear all for this user">⊘</button>
+              </div>
+            </td>
+            <td><span class="mono" style="font-size:12px;color:var(--muted);">{{ w.mod_id }}</span></td>
+            <td style="max-width:260px;">
+              <span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2);">{{ w.reason }}</span>
+            </td>
+            <td style="white-space:nowrap;">
+              <span style="font-size:11px;color:var(--muted);font-family:var(--mono);">{{ w.created_at[:16] }}</span>
+            </td>
+            <td>
+              <button class="btn btn-danger btn-xs" onclick="deleteWarn({{ w.id }})">Delete</button>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      {% if total_pages > 1 %}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:10px;">
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">
+          Page {{ page }} / {{ total_pages }} · {{ total_count }} total
+        </span>
+        <div style="display:flex;gap:8px;">
+          {% if page > 1 %}
+          <a href="?page={{ page-1 }}&q={{ q }}" class="btn btn-ghost btn-sm">← Prev</a>
+          {% endif %}
+          {% if page < total_pages %}
+          <a href="?page={{ page+1 }}&q={{ q }}" class="btn btn-ghost btn-sm">Next →</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">✓</div>
+        <div class="empty-title">{% if q %}No results for "{{ q }}"{% else %}No warnings{% endif %}</div>
+        <div class="empty-sub">{% if q %}Try a different search.{% else %}This server has no warnings on record.{% endif %}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- Most warned users sidebar card -->
+{% if top_warned %}
+<div class="card" style="margin-top:20px;">
+  <div class="card-head"><span class="card-title">Most Warned Users</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+    {% for u in top_warned %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;">
+      <span class="mono" style="font-size:12px;">{{ u.user_id }}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="badge badge-red">{{ u.cnt }} warn{{ 's' if u.cnt != 1 }}</span>
+        <button class="btn btn-ghost btn-xs" onclick="clearUser({{ u.user_id }})">Clear</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const GUILD = "{{ guild_id }}";
+
+async function deleteWarn(id) {
+  if (!confirm(`Delete warning #${id}?`)) return;
+  const r = await apiPost(`/dashboard/${GUILD}/moderation/warn/delete/${id}`);
+  if (r.ok) { document.getElementById(`wr-${id}`)?.remove(); toast(`Warning #${id} deleted`); }
+  else toast(r.error || 'Failed', 'err');
+}
+
+async function clearUser(uid) {
+  if (!confirm(`Clear ALL warnings for user ${uid}?`)) return;
+  const r = await apiPost(`/dashboard/${GUILD}/moderation/warn/clear/${uid}`);
+  if (r.ok) {
+    document.querySelectorAll('#warn-tbody tr').forEach(row => {
+      if (row.cells[1]?.textContent.includes(uid)) row.remove();
+    });
+    toast(`Cleared all warnings for ${uid}`);
+  } else toast(r.error || 'Failed', 'err');
+}
+
+async function clearAllWarns() {
+  if (!confirm('⚠️ Clear ALL warnings for this entire server? This cannot be undone!')) return;
+  const r = await apiPost(`/dashboard/${GUILD}/moderation/clearall`);
+  if (r.ok) {
+    document.getElementById('warn-tbody').innerHTML =
+      `<tr><td colspan="6"><div class="empty-state" style="padding:32px 0;"><div class="empty-icon">✓</div><div class="empty-title">All cleared</div></div></td></tr>`;
+    toast('All warnings cleared');
+  } else toast(r.error || 'Failed', 'err');
+}
+</script>
+{% endblock %}

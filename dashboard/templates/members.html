@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Members{% endblock %}
+{% block page_title %}MEMBERS{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Member List{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Members</h1>
+    <p class="sub">{{ members|length }} members loaded. Warn data is live from the database.</p>
+  </div>
+  <div class="page-actions">
+    {% if after and after != '0' %}<a href="?" class="btn btn-ghost">← First</a>{% endif %}
+    {% if next_after %}<a href="?after={{ next_after }}" class="btn btn-ghost">Load More →</a>{% endif %}
+  </div>
+</div>
+
+{% if members %}
+<div class="card">
+  <div style="margin-bottom:16px;">
+    <input class="form-control" id="msearch" placeholder="Filter by name or ID…"
+           oninput="filterM(this.value)" style="max-width:360px;">
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Member</th><th>User ID</th><th>Joined</th>
+        <th>Warns</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="mtbody">
+      {% for m in members %}
+      {% set u = m.user %}
+      {% set av = 'https://cdn.discordapp.com/avatars/'~u.id~'/'~u.avatar~'.png?size=32' if u.get('avatar') else 'https://cdn.discordapp.com/embed/avatars/0.png' %}
+      <tr data-n="{{ u.username|lower }}" data-id="{{ u.id }}">
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <img src="{{ av }}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'"
+                 style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);">
+            <div>
+              <div style="font-weight:700;font-size:13px;">
+                {{ m.nick or u.username }}
+                {% if u.bot %}<span class="badge badge-blue" style="margin-left:4px;font-size:9px;padding:1px 5px;">BOT</span>{% endif %}
+              </div>
+              {% if m.nick %}<div style="font-size:10px;color:var(--muted);">{{ u.username }}</div>{% endif %}
+            </div>
+          </div>
+        </td>
+        <td><span class="id-tag">{{ u.id }}</span></td>
+        <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted);">{{ m.joined_at[:10] if m.joined_at else '—' }}</span></td>
+        <td>
+          {% if m.warn_count > 0 %}
+          <span class="badge {% if m.warn_count >= 3 %}badge-red{% else %}badge-yellow{% endif %}">{{ m.warn_count }}</span>
+          {% else %}<span style="color:var(--muted);">—</span>{% endif %}
+        </td>
+        <td>
+          {% if m.is_blacklisted %}<span class="badge badge-red">Blacklisted</span>
+          {% elif m.warn_count >= 3 %}<span class="badge badge-yellow">High Risk</span>
+          {% else %}<span class="badge badge-green">OK</span>{% endif %}
+        </td>
+        <td>
+          {% if not u.bot %}
+          <div style="display:flex;gap:5px;">
+            <button class="btn btn-warning btn-xs" onclick="openWarn('{{ u.id }}','{{ u.username|replace("'","\\'")|e }}')">Warn</button>
+            {% if m.warn_count > 0 %}
+            <button class="btn btn-ghost btn-xs" onclick="clearWarn('{{ u.id }}')">Clear</button>
+            {% endif %}
+          </div>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p id="no-res" style="display:none;text-align:center;padding:24px;color:var(--muted);font-size:13px;">No members match your filter.</p>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">👥</div>
+    <div class="empty-title">No members loaded</div>
+    <div class="empty-sub">The bot needs the <strong>Server Members Intent</strong> enabled in the Discord Developer Portal.</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Warn modal -->
+<div id="wmodal" onclick="if(event.target===this)closeWarn()"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:500;
+            align-items:center;justify-content:center;backdrop-filter:blur(6px);">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;
+              padding:28px;width:100%;max-width:400px;margin:20px;
+              animation:fadeUp .22s ease;">
+    <h2 style="font-size:18px;margin-bottom:4px;">Issue Warning</h2>
+    <p id="wsub" style="font-size:13px;color:var(--text2);margin-bottom:20px;"></p>
+    <div class="form-group mb-0">
+      <label class="form-label">Reason</label>
+      <input class="form-control" id="wreason" placeholder="Reason for warning…">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+      <button class="btn btn-ghost" onclick="closeWarn()">Cancel</button>
+      <button class="btn btn-warning" onclick="doWarn()">Issue Warning</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const GUILD = "{{ guild_id }}";
+let wUID = null;
+
+function filterM(q) {
+  q = q.toLowerCase();
+  let vis = 0;
+  document.querySelectorAll('#mtbody tr').forEach(r => {
+    const show = !q || r.dataset.n?.includes(q) || r.dataset.id?.includes(q);
+    r.style.display = show ? '' : 'none';
+    if (show) vis++;
+  });
+  document.getElementById('no-res').style.display = vis === 0 ? 'block' : 'none';
+}
+
+function openWarn(uid, name) {
+  wUID = uid;
+  document.getElementById('wsub').textContent = `${name} (${uid})`;
+  document.getElementById('wreason').value = '';
+  document.getElementById('wmodal').style.display = 'flex';
+  setTimeout(() => document.getElementById('wreason').focus(), 50);
+}
+function closeWarn() { document.getElementById('wmodal').style.display = 'none'; wUID = null; }
+
+async function doWarn() {
+  const reason = document.getElementById('wreason').value.trim() || 'No reason provided';
+  const r = await apiPost(`/dashboard/${GUILD}/moderation/warn/add`, {user_id: wUID, reason});
+  if (r.ok) { toast(`Warning issued`); closeWarn(); }
+  else toast(r.error || 'Failed', 'err');
+}
+
+async function clearWarn(uid) {
+  if (!confirm(`Clear all warnings for ${uid}?`)) return;
+  const r = await apiPost(`/dashboard/${GUILD}/moderation/warn/clear/${uid}`);
+  if (r.ok) toast(`Warnings cleared`);
+  else toast(r.error||'Failed','err');
+}
+</script>
+{% endblock %}
