@@ -4,14 +4,14 @@
 {% block breadcrumb %}{{ guild.get('name','') }} · Send Message{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="ph">
   <div>
     <h1>Announcements</h1>
     <p class="sub">Send formatted Discord embeds to any channel directly from here.</p>
   </div>
 </div>
 
-<div class="grid-2" style="gap:20px;">
+<div class="g2" style="gap:20px;">
 
   <!-- Compose -->
   <div class="card">
@@ -44,7 +44,7 @@
         <label class="form-label">Embed Color</label>
         <div style="display:flex;gap:10px;align-items:center;">
           <input type="color" id="a-picker" value="#3d8bff"
-                 style="width:46px;height:40px;border-radius:8px;border:1px solid var(--border);background:none;cursor:pointer;padding:3px;"
+                 style="width:46px;height:40px;border-radius:8px;border:1px solid var(--b1);background:none;cursor:pointer;padding:3px;"
                  oninput="syncHex(this.value)">
           <input class="form-control" id="a-hex" value="#3d8bff" placeholder="#3d8bff"
                  oninput="syncPicker(this.value)"
@@ -96,17 +96,17 @@
       {% if recent %}
       <div style="display:flex;flex-direction:column;gap:8px;">
         {% for r in recent %}
-        <div style="padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;">
+        <div style="padding:10px 14px;background:var(--layer2);border:1px solid var(--b1);border-radius:9px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <span style="font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
               {{ (r.reason or '').split(': ',1)[-1] or '—' }}
             </span>
-            <span style="font-family:var(--mono);font-size:10px;color:var(--muted);flex-shrink:0;">
+            <span style="font-family:var(--mono);font-size:10px;color:var(--t3);flex-shrink:0;">
               {{ r.created_at[:16].replace('T',' ') }}
             </span>
           </div>
           {% if r.extra %}
-          <div style="font-size:11px;color:var(--muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          <div style="font-size:11px;color:var(--t3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
             {{ r.extra[:100] }}
           </div>
           {% endif %}
@@ -114,8 +114,8 @@
         {% endfor %}
       </div>
       {% else %}
-      <div class="empty-state" style="padding:24px 0;">
-        <div class="empty-icon">📢</div>
+      <div class="empty" style="padding:24px 0;">
+        <div class="empty-ico">📢</div>
         <div class="empty-title">No announcements yet</div>
       </div>
       {% endif %}

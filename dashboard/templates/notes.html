@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Mod Notes{% endblock %}
+{% block page_title %}MOD NOTES{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Mod Notes{% endblock %}
+{% block content %}
+<div class="ph">
+  <div><h1>Mod Notes</h1><p class="sub">Private notes visible only to moderators. Members cannot see these.</p></div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <form method="GET" style="display:flex;gap:12px;align-items:flex-end;">
+    <div class="form-group" style="flex:1;margin-bottom:0;">
+      <label class="form-label">User ID</label>
+      <input class="form-control" name="uid" value="{{ uid }}" placeholder="Discord User ID (18 digits)">
+    </div>
+    <button type="submit" class="btn btn-primary" style="flex-shrink:0;">🔍 Search</button>
+  </form>
+</div>
+
+{% if uid %}
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">Notes for {{ uid }}{% if notes %} ({{ notes|length }}){% endif %}</span>
+  </div>
+  {% if notes %}
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    {% for n in notes %}
+    <div id="note-{{ n.id }}" style="padding:14px 16px;background:var(--layer2);
+               border:1px solid var(--b1);border-left:3px solid var(--x);border-radius:9px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span class="id-tag">#{{ n.id }}</span>
+            <span style="font-size:11px;color:var(--t3);">by mod {{ n.mod_id }} • {{ n.created_at[:16].replace('T',' ') }}</span>
+          </div>
+          <p style="margin:0;font-size:13px;color:var(--t1);">{{ n.note }}</p>
+        </div>
+        <button class="btn btn-danger btn-xs" style="flex-shrink:0;" onclick="deleteNote({{ n.id }})">Delete</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty" style="padding:20px 0;">
+    <div class="empty-ico">📝</div>
+    <div class="empty-title">No notes for this user</div>
+    <div class="empty-sub">Use <span class="id-tag">/note add @user &lt;text&gt;</span> in Discord to add one.</div>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty">
+    <div class="empty-ico">📝</div>
+    <div class="empty-title">Enter a User ID to view notes</div>
+    <div class="empty-sub">Notes are private and only visible to moderators.</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+const GUILD = "{{ guild_id }}";
+async function deleteNote(id) {
+  if (!confirm('Delete this note?')) return;
+  const r = await apiPost(`/dashboard/${GUILD}/notes/delete/${id}`);
+  if (r.ok) { document.getElementById(`note-${id}`)?.remove(); toast('Note deleted'); }
+  else toast(r.error || 'Failed', 'err');
+}
+</script>
+{% endblock %}

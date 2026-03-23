@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Developer Console · Severus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   SEVERUS DEVELOPER CONSOLE  —  Production UI v3
+   Aesthetic: Obsidian terminal. Dense. Information-first.
+═══════════════════════════════════════════════════════════ */
+:root {
+  /* Surfaces */
+  --void:   #020407;
+  --base:   #06080f;
+  --base2:  #090c16;
+  --s1:     #0d1020;
+  --s2:     #111426;
+  --s3:     #161a2e;
+  --s4:     #1c2038;
+
+  /* Borders */
+  --e1: rgba(255,255,255,.05);
+  --e2: rgba(255,255,255,.09);
+  --e3: rgba(255,255,255,.14);
+
+  /* Accent — Cyan / Neon */
+  --hi:    #00d9ff;
+  --hid:   rgba(0,217,255,.10);
+  --hig:   0 0 20px rgba(0,217,255,.25);
+
+  /* Semantic */
+  --lime:   #2dff8c;
+  --limd:   rgba(45,255,140,.10);
+  --amber:  #ffb627;
+  --ambd:   rgba(255,182,39,.10);
+  --rose:   #ff3d6b;
+  --rosd:   rgba(255,61,107,.10);
+  --violet: #b57fff;
+  --vltd:   rgba(181,127,255,.10);
+  --sky:    #38c8f8;
+
+  /* Text */
+  --t1: #dde4ff;
+  --t2: #6b7499;
+  --t3: #3a4060;
+
+  /* Type */
+  --mono: 'JetBrains Mono', monospace;
+  --head: 'Syne', sans-serif;
+  --body: 'DM Sans', sans-serif;
+
+  /* Geometry */
+  --r: 7px;
+  --r2: 11px;
+  --r3: 16px;
+  --sidebar-w: 210px;
+  --topbar-h: 48px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--base);
+  color: var(--t1);
+  font-family: var(--body);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+a { text-decoration: none; color: inherit; }
+
+/* Subtle scanline overlay */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,.04) 3px, rgba(0,0,0,.04) 4px);
+  pointer-events: none;
+  z-index: 9998;
+}
+
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--s4); border-radius: 99px; }
+
+/* ── SHELL ── */
+.shell { display: grid; grid-template-rows: var(--topbar-h) 1fr; height: 100vh; }
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 18px;
+  background: var(--base2);
+  border-bottom: 1px solid var(--e1);
+  position: relative; z-index: 100;
+}
+.topbar::after {
+  content: '';
+  position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--hi) 40%, var(--violet) 60%, transparent 100%);
+  opacity: .35;
+}
+
+.brand { display: flex; align-items: center; gap: 9px; }
+.brand-orb {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: linear-gradient(135deg, var(--hi), var(--violet));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--head); font-size: 13px; font-weight: 900; color: var(--void);
+  box-shadow: 0 0 12px rgba(0,217,255,.3);
+}
+.brand-name { font-family: var(--head); font-size: 15px; font-weight: 900; letter-spacing: -.5px; }
+.brand-tag {
+  font-family: var(--mono); font-size: 8px; font-weight: 700;
+  background: var(--ambd); color: var(--amber); border: 1px solid rgba(255,182,39,.2);
+  padding: 1px 7px; border-radius: 4px; letter-spacing: 2px;
+}
+
+.topbar-clock {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 11px; color: var(--t3);
+}
+.topbar-clock .sep { color: var(--s4); }
+#tb-time { color: var(--hi); font-weight: 700; letter-spacing: 1px; }
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.status-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 99px;
+  font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .5px;
+  background: var(--limd); border: 1px solid rgba(45,255,140,.2); color: var(--lime);
+  transition: all .3s;
+}
+.status-pill.offline { background: var(--rosd); border-color: rgba(255,61,107,.2); color: var(--rose); }
+.pill-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--lime); animation: blink 2s infinite; }
+.status-pill.offline .pill-dot { background: var(--rose); animation: none; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:.25} }
+
+.icon-btn {
+  width: 30px; height: 30px; border-radius: var(--r);
+  background: var(--s2); border: 1px solid var(--e2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 13px; transition: all .12s; color: var(--t2);
+}
+.icon-btn:hover { border-color: var(--hi); color: var(--hi); background: var(--hid); }
+
+.avatar-chip { display: flex; align-items: center; gap: 8px; }
+.avatar-img {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid var(--e3); object-fit: cover;
+}
+.avatar-name { font-size: 11px; font-weight: 600; color: var(--t2); font-family: var(--mono); }
+
+/* ── BODY ── */
+.body { display: grid; grid-template-columns: var(--sidebar-w) 1fr; height: calc(100vh - var(--topbar-h)); overflow: hidden; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--base2);
+  border-right: 1px solid var(--e1);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.sidebar::after {
+  content: '';
+  position: absolute; top: 0; right: 0; width: 1px; height: 100%;
+  background: linear-gradient(180deg, transparent, rgba(0,217,255,.2) 30%, rgba(0,217,255,.2) 70%, transparent);
+  pointer-events: none;
+}
+
+.nav-scroll { flex: 1; overflow-y: auto; padding: 8px 6px; }
+
+.nav-group { margin-bottom: 4px; }
+.nav-group-label {
+  font-family: var(--mono); font-size: 8px; font-weight: 700;
+  color: var(--t3); text-transform: uppercase; letter-spacing: 2px;
+  padding: 10px 10px 4px;
+}
+.nav-btn {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 7px 10px; border-radius: var(--r);
+  font-size: 12px; font-weight: 500; color: var(--t2);
+  cursor: pointer; transition: all .12s;
+  border: none; background: none;
+  position: relative; text-align: left;
+}
+.nav-btn:hover { color: var(--t1); background: rgba(255,255,255,.03); }
+.nav-btn.on {
+  color: var(--hi); background: var(--hid);
+  font-weight: 600;
+}
+.nav-btn.on::before {
+  content: '';
+  position: absolute; left: -6px; top: 25%; bottom: 25%;
+  width: 2px; border-radius: 0 2px 2px 0; background: var(--hi);
+}
+.nav-ico {
+  width: 20px; height: 20px; border-radius: 5px;
+  background: var(--s2); display: flex; align-items: center;
+  justify-content: center; font-size: 10px; flex-shrink: 0;
+  transition: background .12s;
+}
+.nav-btn.on .nav-ico { background: var(--hid); }
+.nav-count {
+  margin-left: auto; font-family: var(--mono); font-size: 9px; font-weight: 700;
+  background: var(--s3); color: var(--t3);
+  padding: 1px 6px; border-radius: 99px;
+  transition: all .12s;
+}
+.nav-btn.on .nav-count { background: var(--hid); color: var(--hi); }
+
+/* Sidebar health footer */
+.sidebar-foot {
+  padding: 10px;
+  border-top: 1px solid var(--e1);
+  flex-shrink: 0;
+}
+.health-block {
+  background: var(--s1);
+  border: 1px solid var(--e1);
+  border-radius: var(--r2);
+  padding: 10px 12px;
+}
+.health-title { font-family: var(--mono); font-size: 8px; color: var(--t3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+.hbar { margin-bottom: 5px; }
+.hbar-top { display: flex; justify-content: space-between; margin-bottom: 3px; }
+.hbar-name { font-size: 10px; color: var(--t2); }
+.hbar-val  { font-family: var(--mono); font-size: 10px; color: var(--hi); }
+.hbar-track { height: 3px; background: var(--s4); border-radius: 99px; overflow: hidden; }
+.hbar-fill  { height: 100%; border-radius: 99px; transition: width 1s ease; }
+.hbar-fill.cyan   { background: linear-gradient(90deg, var(--hi), var(--violet)); }
+.hbar-fill.lime   { background: linear-gradient(90deg, var(--lime), var(--hi)); }
+.hbar-fill.amber  { background: linear-gradient(90deg, var(--amber), #ff8c00); }
+
+/* ── MAIN ── */
+.main { overflow: hidden; display: flex; flex-direction: column; }
+.page { flex: 1; overflow-y: auto; padding: 22px 26px 40px; display: none; }
+.page.on { display: block; }
+
+/* ── PAGE HEADER ── */
+.ph { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; }
+.ph-left h1 { font-family: var(--head); font-size: 20px; font-weight: 900; letter-spacing: -.8px; line-height: 1; }
+.ph-left h1 em { font-style: normal; color: var(--hi); }
+.ph-left p  { font-family: var(--mono); font-size: 10px; color: var(--t2); margin-top: 3px; }
+.ph-right { display: flex; align-items: center; gap: 8px; }
+
+/* ── STAT CARDS ── */
+.sc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.sc {
+  background: var(--s1); border: 1px solid var(--e1); border-radius: var(--r2);
+  padding: 14px 16px; position: relative; overflow: hidden;
+  transition: border-color .15s, box-shadow .15s; cursor: default;
+}
+.sc:hover { border-color: var(--e3); box-shadow: 0 4px 20px rgba(0,0,0,.4); }
+.sc::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.sc.cyan   ::before, .sc.cyan  ::before { background: linear-gradient(90deg, var(--hi), var(--violet)); }
+.sc.lime   ::before { background: linear-gradient(90deg, var(--lime), var(--hi)); }
+.sc.amber  ::before { background: linear-gradient(90deg, var(--amber), #ff8c00); }
+.sc.rose   ::before { background: linear-gradient(90deg, var(--rose), #c0185b); }
+.sc.violet ::before { background: linear-gradient(90deg, var(--violet), #ec4899); }
+.sc.sky    ::before { background: linear-gradient(90deg, var(--sky), var(--hi)); }
+.sc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.sc-ico  { font-size: 16px; }
+.sc-badge {
+  font-family: var(--mono); font-size: 8px; padding: 1px 6px;
+  border-radius: 99px; font-weight: 700;
+}
+.sc-badge.live  { background: var(--limd); color: var(--lime); }
+.sc-badge.total { background: var(--s3); color: var(--t3); }
+.sc-badge.now   { background: var(--ambd); color: var(--amber); }
+.sc-val { font-family: var(--head); font-size: 26px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
+.sc-lbl { font-family: var(--mono); font-size: 8px; color: var(--t2); margin-top: 4px; text-transform: uppercase; letter-spacing: .8px; }
+.sc-sub { font-size: 10px; color: var(--t3); margin-top: 1px; }
+
+/* ── CARDS ── */
+.card { background: var(--s1); border: 1px solid var(--e1); border-radius: var(--r2); margin-bottom: 14px; overflow: hidden; }
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px 0; margin-bottom: 12px;
+}
+.card-title {
+  font-family: var(--mono); font-size: 9px; font-weight: 700;
+  color: var(--t2); text-transform: uppercase; letter-spacing: 1.5px;
+  display: flex; align-items: center; gap: 6px;
+}
+.ct-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.card-body { padding: 0 16px 16px; }
+
+/* ── TABLES ── */
+.tbl-wrap { overflow-x: auto; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl thead th {
+  padding: 7px 12px; font-family: var(--mono); font-size: 8px; font-weight: 700;
+  color: var(--t3); text-transform: uppercase; letter-spacing: 1.5px;
+  border-bottom: 1px solid var(--e1); text-align: left;
+}
+.tbl tbody td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,.02); color: var(--t2); vertical-align: middle; }
+.tbl tbody tr:last-child td { border-bottom: none; }
+.tbl tbody tr:hover td { background: rgba(255,255,255,.015); color: var(--t1); }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 99px;
+  font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .5px;
+}
+.b-cyan   { background: var(--hid);  color: var(--hi);     border: 1px solid rgba(0,217,255,.2); }
+.b-lime   { background: var(--limd); color: var(--lime);   border: 1px solid rgba(45,255,140,.2); }
+.b-amber  { background: var(--ambd); color: var(--amber);  border: 1px solid rgba(255,182,39,.2); }
+.b-rose   { background: var(--rosd); color: var(--rose);   border: 1px solid rgba(255,61,107,.2); }
+.b-violet { background: var(--vltd); color: var(--violet); border: 1px solid rgba(181,127,255,.2); }
+.b-muted  { background: var(--s3);   color: var(--t3);     border: 1px solid var(--e1); }
+
+/* ── MONO TAG ── */
+.mtag {
+  font-family: var(--mono); font-size: 10px;
+  background: var(--s2); padding: 2px 8px; border-radius: 5px; color: var(--t2);
+}
+.mtag.hi { color: var(--hi); }
+
+/* ── PROGRESS BAR ── */
+.pbar { background: var(--s4); border-radius: 99px; height: 3px; overflow: hidden; }
+.pbar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--hi), var(--violet)); transition: width .4s ease; }
+.pbar-fill.amber { background: linear-gradient(90deg, var(--amber), #ff8c00); }
+.pbar-fill.lime  { background: linear-gradient(90deg, var(--lime), var(--hi)); }
+.pbar-fill.rose  { background: linear-gradient(90deg, var(--rose), #c0185b); }
+
+/* ── GRIDS ── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+@media(max-width:960px) { .g2, .g3 { grid-template-columns: 1fr; } }
+
+/* ── CMD ROWS ── */
+.cmd-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,.025);
+  transition: background .1s;
+}
+.cmd-row:last-child { border-bottom: none; }
+.cmd-row:hover { background: rgba(255,255,255,.012); }
+.cmd-rank { font-family: var(--head); font-size: 14px; font-weight: 900; color: var(--t3); width: 22px; text-align: right; flex-shrink: 0; }
+.cmd-rank.gold { color: var(--amber); }
+.cmd-rank.silver { color: #a0aec0; }
+.cmd-rank.bronze { color: #b07d5a; }
+.cmd-name { font-family: var(--mono); font-size: 11px; color: var(--hi); flex-shrink: 0; width: 130px; }
+.cmd-bar  { flex: 1; }
+.cmd-count { font-family: var(--mono); font-size: 10px; color: var(--t3); width: 50px; text-align: right; flex-shrink: 0; }
+
+/* ── AUDIT ROWS ── */
+.audit-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 9px 16px; border-bottom: 1px solid rgba(255,255,255,.025);
+}
+.audit-row:last-child { border-bottom: none; }
+.audit-row:hover { background: rgba(255,255,255,.012); }
+.audit-ts   { font-family: var(--mono); font-size: 9px; color: var(--t3); flex-shrink: 0; width: 100px; padding-top: 2px; }
+.audit-info { font-size: 12px; color: var(--t2); line-height: 1.5; }
+
+/* ── TERMINAL ── */
+.terminal {
+  background: #030508;
+  border: 1px solid var(--e1);
+  border-radius: var(--r2);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.terminal-bar {
+  background: var(--s2);
+  border-bottom: 1px solid var(--e1);
+  padding: 7px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.t-dots { display: flex; gap: 6px; }
+.t-dot  { width: 8px; height: 8px; border-radius: 50%; }
+.terminal-body {
+  font-family: var(--mono); font-size: 11px;
+  padding: 12px; max-height: 340px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 2px;
+  line-height: 1.8;
+}
+.t-line { display: flex; gap: 10px; animation: fade-in .2s ease; }
+@keyframes fade-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+.t-ts   { color: var(--t3); flex-shrink: 0; }
+.t-lvl  { flex-shrink: 0; }
+.t-msg  { color: var(--t2); word-break: break-all; }
+
+.lvl-info { color: var(--hi); }
+.lvl-warn { color: var(--amber); }
+.lvl-err  { color: var(--rose); }
+.lvl-ok   { color: var(--lime); }
+.lvl-cmd  { color: var(--violet); }
+
+/* ── GUILD GRID ── */
+.guild-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.guild-card {
+  background: var(--s2); border: 1px solid var(--e1); border-radius: var(--r2);
+  padding: 13px; display: flex; align-items: center; gap: 12px;
+  cursor: pointer; transition: all .15s;
+}
+.guild-card:hover { border-color: var(--hi); background: var(--hid); }
+.guild-avatar {
+  width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+  background: var(--s3); display: flex; align-items: center; justify-content: center;
+  font-family: var(--head); font-size: 15px; font-weight: 900; color: var(--hi);
+}
+.guild-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.guild-id   { font-family: var(--mono); font-size: 9px; color: var(--t3); }
+
+/* ── STATUS GRID ── */
+.sys-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.sys-item {
+  background: var(--s2); border: 1px solid var(--e1); border-radius: var(--r2);
+  padding: 12px; display: flex; align-items: center; gap: 10px;
+}
+.sys-icon { font-size: 18px; flex-shrink: 0; }
+.sys-label { font-size: 12px; font-weight: 600; }
+.sys-sub   { font-family: var(--mono); font-size: 9px; color: var(--t2); margin-top: 1px; }
+.sys-ind   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-left: auto; }
+.si-ok     { background: var(--lime); box-shadow: 0 0 6px var(--lime); }
+.si-warn   { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.si-off    { background: var(--rose); box-shadow: 0 0 6px var(--rose); animation: none !important; }
+.si-idle   { background: var(--t3); }
+
+/* ── FORM ── */
+.form-group { margin-bottom: 14px; }
+.form-lbl {
+  display: block; font-family: var(--mono); font-size: 8px; font-weight: 700;
+  color: var(--t2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1.5px;
+}
+.form-ctl {
+  width: 100%; padding: 8px 11px;
+  background: var(--s2); border: 1px solid var(--e2);
+  border-radius: var(--r); color: var(--t1); font-size: 12px;
+  font-family: var(--body); outline: none; transition: all .15s;
+}
+.form-ctl:focus { border-color: var(--hi); box-shadow: 0 0 0 3px var(--hid); }
+.form-ctl::placeholder { color: var(--t3); }
+textarea.form-ctl { resize: vertical; min-height: 72px; }
+
+/* ── TOGGLE ── */
+.tog { position: relative; width: 34px; height: 18px; flex-shrink: 0; }
+.tog input { opacity: 0; width: 0; height: 0; }
+.tog-track { position: absolute; inset: 0; background: var(--s4); border-radius: 99px; cursor: pointer; transition: background .2s; border: 1px solid var(--e2); }
+.tog input:checked ~ .tog-track { background: var(--hi); }
+.tog-thumb { position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; background: #fff; border-radius: 50%; transition: left .2s; pointer-events: none; }
+.tog input:checked ~ .tog-track ~ .tog-thumb { left: 18px; }
+
+/* ── QA BUTTONS ── */
+.qa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 9px; }
+.qa-btn {
+  background: var(--s2); border: 1px solid var(--e1); border-radius: var(--r2);
+  padding: 14px; cursor: pointer; transition: all .15s;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  text-align: center;
+}
+.qa-btn:hover { border-color: var(--e3); background: var(--s3); }
+.qa-btn.danger:hover { border-color: var(--rose); background: var(--rosd); }
+.qa-btn.warn:hover   { border-color: var(--amber); background: var(--ambd); }
+.qa-btn.green:hover  { border-color: var(--lime); background: var(--limd); }
+.qa-ico   { font-size: 22px; }
+.qa-label { font-size: 11px; font-weight: 600; color: var(--t2); }
+.qa-desc  { font-family: var(--mono); font-size: 8px; color: var(--t3); }
+
+/* ── HEATMAP ── */
+.heatmap { display: grid; grid-template-columns: repeat(52, 1fr); gap: 2px; }
+.hm-day  { aspect-ratio: 1; border-radius: 2px; background: var(--s3); transition: transform .1s; cursor: default; }
+.hm-day:hover { transform: scale(1.4); z-index: 10; }
+.hm-day[data-v="1"] { background: rgba(0,217,255,.18); }
+.hm-day[data-v="2"] { background: rgba(0,217,255,.38); }
+.hm-day[data-v="3"] { background: rgba(0,217,255,.62); }
+.hm-day[data-v="4"] { background: rgba(0,217,255,.88); }
+
+/* ── SEARCH ── */
+.search-wrap { position: relative; }
+.search-ico  { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--t3); font-size: 11px; pointer-events: none; }
+.search-input {
+  padding: 6px 10px 6px 28px; background: var(--s2); border: 1px solid var(--e2);
+  border-radius: var(--r); color: var(--t1); font-size: 11px; outline: none;
+  font-family: var(--mono); width: 190px; transition: all .15s;
+}
+.search-input:focus { border-color: var(--hi); width: 230px; }
+
+/* ── ACTION BTN ── */
+.act-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: var(--r);
+  font-size: 10px; font-weight: 600; font-family: var(--mono);
+  background: var(--s2); border: 1px solid var(--e2); color: var(--t2);
+  cursor: pointer; transition: all .12s;
+}
+.act-btn:hover { border-color: var(--hi); color: var(--hi); background: var(--hid); }
+.act-btn.primary { background: var(--hi); color: var(--void); border-color: var(--hi); font-weight: 700; }
+.act-btn.primary:hover { background: #33e0ff; }
+
+/* ── DIVIDER ── */
+.divider { height: 1px; background: var(--e1); margin: 14px 0; }
+
+/* ── TOAST ── */
+#toast-zone {
+  position: fixed; bottom: 18px; right: 18px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+}
+.toast-item {
+  background: var(--s2); border: 1px solid var(--e2); border-radius: var(--r);
+  padding: 8px 14px; font-size: 11px; font-weight: 600;
+  font-family: var(--mono); box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  transform: translateX(110%); transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: all; min-width: 180px; max-width: 280px;
+  display: flex; align-items: center; gap: 8px;
+}
+.toast-item.show { transform: translateX(0); }
+.toast-item.ok   { border-left: 2px solid var(--lime); }
+.toast-item.err  { border-left: 2px solid var(--rose); }
+.toast-item.info { border-left: 2px solid var(--hi); }
+.toast-item.warn { border-left: 2px solid var(--amber); }
+
+/* ── CONFIG ROW ── */
+.cfg-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,.025);
+}
+.cfg-row:last-child { border-bottom: none; }
+.cfg-key { font-family: var(--mono); font-size: 11px; color: var(--t2); }
+.cfg-val { font-family: var(--mono); font-size: 11px; }
+
+/* ── REFRESH PULSE ── */
+@keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:.2} }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ════════════════════════  TOPBAR  ════════════════════════ -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-orb">S</div>
+    <span class="brand-name">Severus</span>
+    <span class="brand-tag">DEV CONSOLE</span>
+  </div>
+
+  <div class="topbar-clock">
+    <span id="tb-time">--:--:--</span>
+    <span class="sep">·</span>
+    <span id="tb-date" style="color:var(--t2)">---</span>
+    <span class="sep">·</span>
+    <span id="tb-ping" style="color:var(--t2)">ping…</span>
+  </div>
+
+  <div class="topbar-right">
+    <div class="status-pill" id="status-pill">
+      <span class="pill-dot"></span>
+      <span id="pill-text">Connecting…</span>
+    </div>
+    <a href="/" class="act-btn">← Dashboard</a>
+    <div class="avatar-chip">
+      <img src="https://cdn.discordapp.com/avatars/{{ user.id }}/{{ user.avatar }}.png?size=64"
+           class="avatar-img"
+           onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+      <span class="avatar-name">{{ user.username }}</span>
+    </div>
+  </div>
+</header>
+
+<!-- ════════════════════════  BODY  ════════════════════════ -->
+<div class="body">
+
+<!-- ──  SIDEBAR  ── -->
+<aside class="sidebar">
+  <div class="nav-scroll">
+
+    <div class="nav-group">
+      <div class="nav-group-label">Overview</div>
+      <button class="nav-btn on" onclick="go('overview',this)">
+        <span class="nav-ico">◈</span>Overview
+        <span class="nav-count" id="nb-guilds">{{ total_guilds }}</span>
+      </button>
+      <button class="nav-btn" onclick="go('system',this)">
+        <span class="nav-ico">⬡</span>System Status
+      </button>
+      <button class="nav-btn" onclick="go('activity',this)">
+        <span class="nav-ico">〜</span>Activity
+      </button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Data</div>
+      <button class="nav-btn" onclick="go('guilds',this)">
+        <span class="nav-ico">🌐</span>Guilds
+        <span class="nav-count">{{ guilds_list|length }}</span>
+      </button>
+      <button class="nav-btn" onclick="go('commands',this)">
+        <span class="nav-ico">⚡</span>Commands
+      </button>
+      <button class="nav-btn" onclick="go('audit',this)">
+        <span class="nav-ico">📋</span>Audit Log
+      </button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">System</div>
+      <button class="nav-btn" onclick="go('database',this)">
+        <span class="nav-ico">🗄</span>Database
+      </button>
+      <button class="nav-btn" onclick="go('logs',this)">
+        <span class="nav-ico">📡</span>Live Logs
+      </button>
+      <button class="nav-btn" onclick="go('config',this)">
+        <span class="nav-ico">⚙</span>Config
+      </button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Control</div>
+      <button class="nav-btn" onclick="go('modules',this)">
+        <span class="nav-ico">🧩</span>Modules
+      </button>
+      <button class="nav-btn" onclick="go('actions',this)">
+        <span class="nav-ico">🔧</span>Quick Actions
+      </button>
+    </div>
+
+  </div><!-- /nav-scroll -->
+
+  <div class="sidebar-foot">
+    <div class="health-block">
+      <div class="health-title">System Health</div>
+      <div class="hbar">
+        <div class="hbar-top"><span class="hbar-name">Latency</span><span class="hbar-val" id="hb-lat">—</span></div>
+        <div class="hbar-track"><div class="hbar-fill cyan" id="hb-lat-fill" style="width:0%"></div></div>
+      </div>
+      <div class="hbar">
+        <div class="hbar-top"><span class="hbar-name">Guilds</span><span class="hbar-val" id="hb-guilds">{{ total_guilds }}</span></div>
+        <div class="hbar-track"><div class="hbar-fill amber" style="width:40%"></div></div>
+      </div>
+      <div class="hbar">
+        <div class="hbar-top"><span class="hbar-name">Uptime</span><span class="hbar-val" id="hb-uptime">Live</span></div>
+        <div class="hbar-track"><div class="hbar-fill lime" style="width:99%"></div></div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ──  MAIN AREA  ── -->
+<div class="main">
+
+<!-- ━━━━━━━━━━━━━━  PAGE: OVERVIEW  ━━━━━━━━━━━━━━ -->
+<div class="page on" id="page-overview">
+  <div class="ph">
+    <div class="ph-left">
+      <h1>Dev <em>Overview</em></h1>
+      <p>real-time bot statistics — refreshes every 30 s</p>
+    </div>
+    <div class="ph-right">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--t3)">Last sync: <span id="last-sync">—</span></span>
+      <button class="act-btn" onclick="pollStatus()">⟳ Refresh</button>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="sc-grid">
+    <div class="sc cyan">
+      <div class="sc-top"><span class="sc-ico">🌐</span><span class="sc-badge live">LIVE</span></div>
+      <div class="sc-val" id="st-guilds">{{ total_guilds }}</div>
+      <div class="sc-lbl">Total Guilds</div>
+      <div class="sc-sub">Active servers</div>
+    </div>
+    <div class="sc amber">
+      <div class="sc-top"><span class="sc-ico">⚡</span><span class="sc-badge total">ALL TIME</span></div>
+      <div class="sc-val" id="st-cmds">{{ "{:,}".format(total_commands) }}</div>
+      <div class="sc-lbl">Commands Run</div>
+      <div class="sc-sub" id="st-today">— today</div>
+    </div>
+    <div class="sc rose">
+      <div class="sc-top"><span class="sc-ico">⚠</span><span class="sc-badge total">ALL TIME</span></div>
+      <div class="sc-val">{{ total_warnings }}</div>
+      <div class="sc-lbl">Warnings Issued</div>
+      <div class="sc-sub">All guilds</div>
+    </div>
+    <div class="sc lime">
+      <div class="sc-top"><span class="sc-ico">💬</span><span class="sc-badge live">ACTIVE</span></div>
+      <div class="sc-val">{{ total_custom }}</div>
+      <div class="sc-lbl">Custom Commands</div>
+      <div class="sc-sub">Guild-wide</div>
+    </div>
+    <div class="sc violet">
+      <div class="sc-top"><span class="sc-ico">🔗</span><span class="sc-badge total">STORED</span></div>
+      <div class="sc-val">{{ total_aliases }}</div>
+      <div class="sc-lbl">Aliases</div>
+      <div class="sc-sub">Command shortcuts</div>
+    </div>
+    <div class="sc sky">
+      <div class="sc-top"><span class="sc-ico">⏱</span><span class="sc-badge now">NOW</span></div>
+      <div class="sc-val" id="st-lat">—</div>
+      <div class="sc-lbl">API Latency</div>
+      <div class="sc-sub">Discord ping (ms)</div>
+    </div>
+  </div>
+
+  <!-- Sparkline chart -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--hi);animation:pulse-dot 2s infinite"></span>7-Day Command Activity</div>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--t3)">Commands / day</span>
+    </div>
+    <div class="card-body"><canvas id="spark-chart" height="65"></canvas></div>
+  </div>
+
+  <div class="g2">
+    <!-- Top commands -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>Top Commands</div>
+        <span class="badge b-muted">All guilds</span>
+      </div>
+      {% if top_commands %}{% set mc = top_commands[0].total %}
+      {% for cmd in top_commands[:6] %}
+      <div class="cmd-row">
+        <span class="cmd-rank {% if loop.index==1 %}gold{% elif loop.index==2 %}silver{% elif loop.index==3 %}bronze{% endif %}">{{ loop.index }}</span>
+        <span class="cmd-name">/{{ cmd.command }}</span>
+        <div class="cmd-bar"><div class="pbar"><div class="pbar-fill" style="width:{{ (cmd.total/mc*100)|int }}%"></div></div></div>
+        <span class="cmd-count">{{ "{:,}".format(cmd.total) }}</span>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="padding:30px;text-align:center;color:var(--t3);font-family:var(--mono);font-size:11px">No usage data yet.</div>
+      {% endif %}
+    </div>
+
+    <!-- Recent audit -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="ct-dot" style="background:var(--rose)"></span>Recent Actions</div>
+        <a href="#" onclick="go('audit',document.querySelector('[onclick*=audit]'))" class="act-btn">View all →</a>
+      </div>
+      {% set ac = {'BAN':'b-rose','KICK':'b-amber','WARN':'b-amber','MUTE':'b-amber','TIMEOUT':'b-amber','UNBAN':'b-lime','UNMUTE':'b-lime','ANNOUNCE':'b-cyan'} %}
+      {% if recent_audit %}{% for e in recent_audit[:6] %}
+      <div class="audit-row">
+        <span class="audit-ts">{{ e.created_at[5:16].replace('T',' ') }}</span>
+        <span><span class="badge {{ ac.get(e.action,'b-muted') }}" style="margin-right:8px">{{ e.action }}</span></span>
+        <span class="audit-info">
+          <span class="mtag hi" style="font-size:9px">{{ e.guild_id }}</span>
+          {% if e.reason %}<br><span style="font-size:10px;color:var(--t3)">{{ e.reason[:60] }}</span>{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="padding:30px;text-align:center;color:var(--t3);font-family:var(--mono);font-size:11px">No audit entries yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+
+<!-- ━━━━━━━━━━━━━━  PAGE: SYSTEM  ━━━━━━━━━━━━━━ -->
+<div class="page" id="page-system">
+  <div class="ph">
+    <div class="ph-left"><h1>System <em>Status</em></h1><p>services, integrations, runtime metrics</p></div>
+  </div>
+
+  <!-- Service indicators -->
+  <div class="sys-grid">
+    {% for icon, label, sub, ind_id, ind_class in [
+      ('🤖','Discord Bot','Checking…','si-bot','si-idle'),
+      ('📡','API Gateway','Discord v10','si-api','si-ok'),
+      ('🗄','SQLite DB','data/bot.db','si-db','si-ok'),
+      ('🔒','OAuth2','Dashboard auth','si-auth','si-ok'),
+      ('🌐','Flask Dashboard','Running','si-dash','si-ok'),
+      ('🎵','Music (yt-dlp)','Integrated','si-music','si-ok'),
+      ('💤','AFK System','Cog loaded','si-afk','si-ok'),
+      ('🔔','Log Stream','WebSocket','si-ws','si-idle'),
+    ] %}
+    <div class="sys-item">
+      <span class="sys-icon">{{ icon }}</span>
+      <div><div class="sys-label">{{ label }}</div><div class="sys-sub" id="{{ ind_id }}-sub">{{ sub }}</div></div>
+      <span class="sys-ind {{ ind_class }}" id="{{ ind_id }}"></span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="g2">
+    <!-- Bot identity -->
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--hi)"></span>Bot Identity</div></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-lbl">Bot Tag</label>
+          <div class="mtag" id="sys-bot-tag" style="display:inline-block;padding:5px 11px;font-size:11px">fetching…</div>
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">Owner ID</label>
+          <div class="mtag" style="display:inline-block;padding:5px 11px;font-size:11px">{{ user.id }}</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-lbl">Total Guilds</label>
+          <div class="mtag hi" id="sys-guild-count" style="display:inline-block;padding:5px 11px;font-size:11px">{{ total_guilds }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Runtime metrics -->
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--lime)"></span>Runtime Metrics</div></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:12px;color:var(--t2)">API Latency</span>
+            <span class="mtag" id="rm-lat" style="font-size:9px">—</span>
+          </div>
+          <div class="pbar"><div class="pbar-fill" id="rm-lat-fill" style="width:0%"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:12px;color:var(--t2)">Commands Today</span>
+            <span class="mtag" id="rm-cmds" style="font-size:9px">—</span>
+          </div>
+          <div class="pbar"><div class="pbar-fill amber" id="rm-cmds-fill" style="width:0%"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:12px;color:var(--t2)">Guild Load</span>
+            <span class="mtag" id="rm-guilds" style="font-size:9px">{{ total_guilds }}</span>
+          </div>
+          <div class="pbar"><div class="pbar-fill lime" id="rm-guilds-fill" style="width:30%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loaded cogs -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--violet)"></span>Loaded Cogs</div>
+      <span class="badge b-lime">{{ 31 }} active</span>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        {% set cogs = [
+          'general.ping','general.avatar','general.uptime','general.userinfo',
+          'general.serverinfo','general.snipe','general.help','general.reminders',
+          'general.afk',
+          'moderation.ban','moderation.kick','moderation.mute','moderation.warn',
+          'moderation.timeout','moderation.clear','moderation.notes',
+          'moderation.slowmode','moderation.thresholds',
+          'community.autoroles','community.custom_commands',
+          'roles.panels','settings.config','settings.aliases',
+          'logging.logger','security.security',
+          'temprooms.rooms','temprooms.invite',
+          'music.player','music.lyrics',
+          'automod','owner','ipc_bridge'
+        ] %}
+        {% for cog in cogs %}
+        <span class="badge b-{% if 'general' in cog or 'music' in cog %}cyan{% elif 'mod' in cog %}rose{% elif 'community' in cog or 'autorole' in cog %}violet{% elif 'roles' in cog %}amber{% elif 'settings' in cog or 'logging' in cog %}lime{% else %}muted{% endif %}"
+              style="font-size:8px">{{ cog }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ━━━━━━━━━━━━━━  PAGE: ACTIVITY  ━━━━━━━━━━━━━━ -->
+<div class="page" id="page-activity">
+  <div class="ph">
+    <div class="ph-left"><h1>Activity <em>Heatmap</em></h1><p>command usage patterns — 52-week view</p></div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--hi)"></span>Command Frequency — Past Year</div>
+    </div>
+    <div class="card-body">
+      <div class="heatmap" id="heatmap-grid"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-family:var(--mono);font-size:9px;color:var(--t3)">
+        <span>Less</span>
+        {% for op in [0,'0.18','0.38','0.62','0.88'] %}
+        <div style="width:10px;height:10px;border-radius:2px;background:rgba(0,217,255,{{ op }});border:{% if op==0 %}1px solid var(--e1){% else %}none{% endif %}"></div>
+        {% endfor %}
+        <span>More</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>Busiest Days (avg)</div></div>
+      <div class="card-body">
+        {% for day, pct in [('Mon',72),('Tue',65),('Wed',78),('Thu',74),('Fri',88),('Sat',44),('Sun',36)] %}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--t2);width:28px">{{ day }}</span>
+          <div class="pbar" style="flex:1"><div class="pbar-fill amber" style="width:{{ pct }}%"></div></div>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--t3);width:32px;text-align:right">{{ pct }}%</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--violet)"></span>Peak Hours (UTC)</div></div>
+      <div class="card-body">
+        {% for hr, pct in [('06:00',14),('10:00',28),('14:00',52),('17:00',70),('19:00',88),('20:00',92),('21:00',78),('23:00',45)] %}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--t2);width:40px">{{ hr }}</span>
+          <div class="pbar" style="flex:1"><div class="pbar-fill" style="background:linear-gradient(90deg,var(--violet),var(--hi));width:{{ pct }}%"></div></div>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--t3);width:32px;text-align:right">{{ pct }}%</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ━━━━━━━━━━━━━━  PAGE: GUILDS  ━━━━━━━━━━━━━━ -->
+<div class="page" id="page-guilds">
+  <div class="ph">
+    <div class="ph-left"><h1>All <em>Guilds</em></h1><p>{{ guilds_list|length }} server(s) in the database</p></div>
+    <div class="ph-right">
+      <div class="search-wrap">
+        <span class="search-ico">🔍</span>
+        <input class="search-input" placeholder="Filter by ID…" oninput="filterGuilds(this.value)">
+      </div>
+    </div>
+  </div>
+  <div class="guild-grid" id="guild-grid">
+    {% if guilds_list %}{% for g in guilds_list %}
+    <a href="/dashboard/{{ g.guild_id }}" class="guild-card" data-id="{{ g.guild_id }}">
+      <div class="guild-avatar">{{ g.guild_id|string|truncate(2,true,'',0)|upper }}</div>
+      <div style="min-width:0">
+        <div class="guild-name">Guild #{{ loop.index }}</div>
+        <div class="guild-id">{{ g.guild_id }}</div>
+      </div>
+      <span style="margin-left:auto;color:var(--t3);font-size:14px">›</span>
+    </a>
+    {% endfor %}
+    {% else %}
+    <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--t3);font-family:var(--mono);font-size:11px">
+      No guilds registered yet. Have the bot join a server.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+
+<!-- ━━━━━━━━━━━━━━  PAGE: COMMANDS  ━━━━━━━━━━━━━━ -->
+<div class="page" id="page-commands">
+  <div class="ph">
+    <div class="ph-left"><h1>Command <em>Statistics</em></h1><p>usage rankings across all servers</p></div>
+  </div>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>All Commands — Usage Ranked</div>
+      <span class="badge b-muted">{{ top_commands|length }} commands</span>
+    </div>
+    {% if top_commands %}{% set mc = top_commands[0].total %}
+    {% for cmd in top_commands %}
+    <div class="cmd-row">
+      <span class="cmd-rank {% if loop.index==1 %}gold{% elif loop.index==2 %}silver{% elif loop.index==3 %}bronze{% endif %}">{{ loop.index }}</span>
+      <span class="cmd-name">/{{ cmd.command }}</span>
+      <div class="cmd-bar"><div class="pbar"><div class="pbar-fill" style="width:{{ (cmd.total/mc*100)|int }}%"></div></div></div>
+      <span class="cmd-count">{{ "{:,}".format(cmd.total) }}</span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div style="padding:40px;text-align:center;color:var(--t3);font-family:var(--mono);font-size:11px">No command data recorded yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+
+<!-- ━━━━━━━━━━━━━━  PAGE: AUDIT LOG  ━━━━━━━━━━━━━━ -->
+<div class="page" id="page-audit">
+  <div class="ph">
+    <div class="ph-left"><h1>Audit <em>Log</em></h1><p>moderation actions across all guilds</p></div>
+    <div class="ph-right">
+      <div class="search-wrap">
+        <span class="search-ico">🔍</span>
+        <input class="search-input" id="audit-search" placeholder="Search…" oninput="filterAudit(this.value)">
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--rose)"></span>Recent Actions</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        {% for label, cls in [('ALL','b-cyan'),('BAN','b-rose'),('KICK','b-amber'),('WARN','b-amber'),('UNBAN','b-lime'),('MUTE','b-violet')] %}
+        <button class="badge {{ cls }}" style="cursor:pointer" onclick="filterAuditType('{{ label if label!='ALL' else '' }}')">{{ label }}</button>
+        {% endfor %}
+      </div>
+    </div>
+    {% set ac = {'BAN':'b-rose','KICK':'b-amber','WARN':'b-amber','MUTE':'b-violet','TIMEOUT':'b-amber','UNBAN':'b-lime','UNMUTE':'b-lime','ANNOUNCE':'b-cyan'} %}
+    {% if recent_audit %}
+    <div id="audit-list">
+    {% for e in recent_audit %}
+    <div class="audit-row" data-action="{{ e.action }}" data-search="{{ e.action }} {{ e.guild_id }} {{ e.mod_id }} {{ e.target_id }} {{ e.reason or '' }}">
+      <span class="audit-ts">{{ e.created_at[5:16].replace('T',' ') }}</span>
+      <span><span class="badge {{ ac.get(e.action,'b-muted') }}" style="margin-right:8px">{{ e.action }}</span></span>
+      <span class="audit-info">
+        Server <span class="mtag hi" style="font-size:9px">{{ e.guild_id }}</span>
+        · Mod <span class="mtag" style="font-size:9px">{{ e.mod_id }}</span>
+        → Target <span class="mtag" style="font-size:9px">{{ e.target_id or '—' }}</span>
+        {% if e.reason %}<br><span style="color:var(--t3);font-size:10px">{{ e.reason[:100] }}</span>{% endif %}
+      </span>
+    </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding:40px;text-align:center;color:var(--t3);font-family:var(--mono);font-size:11px">No audit entries yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+
+<!-- ━━━━━━━━━━━━━━  PAGE: DATABASE  ━━━━━━━━━━━━━━ -->
+<div class="page" id="page-database">
+  <div class="ph">
+    <div class="ph-left"><h1>Database <em>Explorer</em></h1><p>table row counts and storage snapshot</p></div>
+    <div class="ph-right"><button class="act-btn" onclick="fetchDbStats()">⟳ Refresh</button></div>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="t-dots">
+        <div class="t-dot" style="background:#ff5f57"></div>
+        <div class="t-dot" style="background:#ffbd2e"></div>
+        <div class="t-dot" style="background:#28c840"></div>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--t3);margin-left:10px">sqlite3 data/bot.db</span>
+      </div>
+      <span class="badge b-lime" style="font-size:8px">CONNECTED</span>
+    </div>
+    <div class="terminal-body" id="db-terminal">
+      <div class="t-line"><span class="t-ts">$</span><span class="lvl-info t-lvl">SELECT</span><span class="t-msg"> table_name, COUNT(*) FROM… click Refresh</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--violet)"></span>Table Overview</div></div>
+    <div class="card-body">
+      <div id="db-table-grid" class="sc-grid"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ━━━━━━━━━━━━━━  PAGE: LIVE LOGS  ━━━━━━━━━━━━━━ -->
+<div class="page" id="page-logs">
+  <div class="ph">
+    <div class="ph-left"><h1>Live <em>Log Stream</em></h1><p>real-time WebSocket event feed</p></div>
+    <div class="ph-right">
+      <label class="tog"><input type="checkbox" checked id="log-auto"><span class="tog-track"></span><span class="tog-thumb"></span></label>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--t2)">Auto-scroll</span>
+      <button class="act-btn" onclick="clearLogs()">⊘ Clear</button>
+    </div>
+  </div>
+
+  <div class="terminal" style="margin-bottom:14px">
+    <div class="terminal-bar">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="t-dots">
+          <div class="t-dot" style="background:#ff5f57"></div>
+          <div class="t-dot" style="background:#ffbd2e"></div>
+          <div class="t-dot" style="background:#28c840"></div>
+        </div>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--t3)">severus.log — live via WebSocket</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--lime);display:inline-block;animation:pulse-dot 2s infinite" id="ws-dot"></span>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--lime)" id="ws-label">STREAMING</span>
+      </div>
+    </div>
+    <div class="terminal-body" id="log-body" style="max-height:400px">
+      <div class="t-line"><span class="t-ts">[--:--:--]</span><span class="lvl-info t-lvl">INFO   </span><span class="t-msg"> Log stream initializing…</span></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--lime)"></span>Log Counts (session)</div></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+        {% for label, id, cls in [('INFO','lc-info','b-cyan'),('WARN','lc-warn','b-amber'),('ERROR','lc-err','b-rose'),('SUCCESS','lc-ok','b-lime'),('CMD','lc-cmd','b-violet')] %}
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--t2)">{{ label }}</span>
+          <span class="badge {{ cls }}" id="{{ id }}">0</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>Filter Logs</div></div>
+      <div class="card-body" style="display:flex;gap:7px;flex-wrap:wrap">
+        {% for label, cls in [('ALL','b-cyan'),('INFO','b-cyan'),('WARN','b-amber'),('ERROR','b-rose'),('SUCCESS','b-lime'),('CMD','b-violet')] %}
+        <button class="badge {{ cls }}" style="cursor:pointer;padding:4px 10px" onclick="filterLogs('{{ label }}')">{{ label }}</button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ━━━━━━━━━━━━━━  PAGE: CONFIG  ━━━━━━━━━━━━━━ -->
+<div class="page" id="page-config">
+  <div class="ph">
+    <div class="ph-left"><h1>Bot <em>Config</em></h1><p>runtime values — edit config.py to change</p></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--hi)"></span>Core Settings</div></div>
+      <div style="background:#030508;border-radius:0 0 var(--r2) var(--r2);font-family:var(--mono);padding:12px">
+        {% for k, v, col in [
+          ('BOT_NAME',      'Severus',      'var(--lime)'),
+          ('BOT_VERSION',   '2.0',          'var(--hi)'),
+          ('PREFIX',        '!',            'var(--amber)'),
+          ('DB_PATH',       'data/bot.db',  'var(--hi)'),
+          ('DASHBOARD_PORT','5000',         'var(--amber)'),
+          ('MUTE_ROLE_NAME','Muted',        'var(--violet)'),
+          ('FFMPEG_PATH',   'ffmpeg',       'var(--lime)'),
+          ('MAX_QUEUE_SIZE','100',          'var(--amber)'),
+          ('DEFAULT_VOLUME','50',          'var(--sky)'),
+          ('FOOTER_TEXT',   'Severus Bot',  'var(--violet)'),
+        ] %}
+        <div class="cfg-row">
+          <span class="cfg-key">{{ k }}</span>
+          <span class="cfg-val" style="color:{{ col }}">"{{ v }}"</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--violet)"></span>Feature Status</div></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+          {% for name, on in [('AutoMod',True),('Music Player',True),('AFK System',True),('Temp Rooms',True),('Role Panels',True),('Announcements',True),('Reminders',True),('Ticket System',False),('Economy',False)] %}
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:12px;font-weight:600">{{ name }}</div>
+              <div style="font-family:var(--mono);font-size:9px;color:var(--t3)">{{ 'Enabled' if on else 'Coming soon' }}</div>
+            </div>
+            <span class="badge {% if on %}b-lime{% else %}b-muted{% endif %}">{{ '✓ ON' if on else 'OFF' }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--sky)"></span>Color Palette</div></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+          {% for label, hex in [('PRIMARY','#5865F2'),('SUCCESS','#2ecc71'),('ERROR','#e74c3c'),('WARN','#f39c12'),('MUSIC','#1DB954'),('INFO','#3498db'),('GOLD','#FFD700')] %}
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-family:var(--mono);font-size:10px;color:var(--t2)">{{ label }}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:14px;height:14px;border-radius:3px;background:{{ hex }};border:1px solid rgba(255,255,255,.1)"></div>
+              <span style="font-family:var(--mono);font-size:9px;color:var(--t3)">{{ hex }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ━━━━━━━━━━━━━━  PAGE: QUICK ACTIONS  ━━━━━━━━━━━━━━ -->
+<!-- ━━━━━━━━━━━━━━  PAGE: MODULES  ━━━━━━━━━━━━━━ -->
+<div class="page" id="page-modules">
+  <div class="ph">
+    <div class="ph-left"><h1>Module <em>Manager</em></h1><p>enable · disable · maintenance — live bot control via IPC</p></div>
+    <div class="ph-right">
+      <button class="act-btn" onclick="refreshModules()">⟳ Refresh</button>
+    </div>
+  </div>
+
+  <div id="mod-loading" style="text-align:center;padding:48px;color:var(--t2);font-family:var(--mono);font-size:11px">
+    Fetching module state from bot…
+  </div>
+  <div id="mod-grid" style="display:none"></div>
+
+  <!-- Maintenance modal -->
+  <div id="maint-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:999;align-items:center;justify-content:center">
+    <div style="background:var(--s2);border:1px solid var(--e2);border-radius:var(--r3);padding:24px;width:380px;max-width:95vw;box-shadow:0 24px 64px rgba(0,0,0,.6)">
+      <div style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--hi);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">🔧 Maintenance Mode</div>
+      <div style="font-size:13px;color:var(--t2);margin-bottom:14px">Module: <strong id="maint-name" style="color:var(--t1)"></strong></div>
+      <div class="form-group">
+        <label class="form-lbl">Reason (visible to users)</label>
+        <input class="form-ctl" id="maint-reason" placeholder="e.g. Undergoing maintenance — back in 10 min" style="width:100%">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+        <button class="act-btn" onclick="closeMaint()">Cancel</button>
+        <button class="act-btn primary" onclick="confirmMaint()">Enable Maintenance</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ━━━━━━━━━━━━━━  PAGE: QUICK ACTIONS  ━━━━━━━━━━━━━━ -->
+<div class="page" id="page-actions">
+  <div class="ph">
+    <div class="ph-left"><h1>Quick <em>Actions</em></h1><p>live IPC — every action shows the real bot response</p></div>
+    <div id="ipc-status-bar" style="font-family:var(--mono);font-size:10px;color:var(--t3)"></div>
+  </div>
+
+  <!-- Bot controls -->
+  <div class="card" style="border-color:rgba(255,61,107,.12);margin-bottom:14px">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--rose)"></span>Bot Controls</div>
+      <span class="badge b-rose">Owner Only</span>
+    </div>
+    <div class="card-body">
+      <div class="qa-grid">
+        <div class="qa-btn" onclick="ipcAction('reload_cogs',{},'Reload all cogs? Bot will be briefly unresponsive.')">
+          <span class="qa-ico">🔄</span><span class="qa-label">Reload Cogs</span>
+          <span class="qa-desc">Hot-reload all extensions</span>
+        </div>
+        <div class="qa-btn" onclick="ipcAction('sync_commands',{},'Re-sync all slash commands with Discord?')">
+          <span class="qa-ico">⚡</span><span class="qa-label">Sync Commands</span>
+          <span class="qa-desc">Push to Discord API</span>
+        </div>
+        <div class="qa-btn danger" onclick="ipcAction('shutdown',{},'Shut down the bot? You must restart it manually.',true)">
+          <span class="qa-ico">⏹</span><span class="qa-label">Shutdown Bot</span>
+          <span class="qa-desc">Graceful process exit</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--lime)"></span>Bot Status</div></div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-lbl">Activity Type</label>
+          <select class="form-ctl" id="status-type">
+            <option value="watching">Watching</option>
+            <option value="playing">Playing</option>
+            <option value="listening">Listening to</option>
+            <option value="competing">Competing in</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-lbl">Status Text</label>
+          <input class="form-ctl" id="status-text" placeholder="your server 👀" value="your server 👀">
+        </div>
+      </div>
+      <button class="act-btn primary" onclick="setStatus()">🎮 Update Status</button>
+    </div>
+  </div>
+
+  <!-- DB -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>Database Maintenance</div></div>
+    <div class="card-body">
+      <div class="qa-grid">
+        <div class="qa-btn warn" onclick="ipcAction('vacuum_db',{},'Run VACUUM on the SQLite DB? Frees unused disk space.')">
+          <span class="qa-ico">💾</span><span class="qa-label">DB Vacuum</span><span class="qa-desc">Reclaim disk space</span>
+        </div>
+        <div class="qa-btn warn" onclick="ipcAction('clear_stats',{},'Clear ALL command stats? Cannot be undone.')">
+          <span class="qa-ico">🗑</span><span class="qa-label">Clear All Stats</span><span class="qa-desc">Wipe command_stats table</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IPC response log -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--hi);animation:pulse-dot 2s infinite"></span>IPC Response Log</div>
+      <button class="act-btn" onclick="clearIpcLog()">Clear</button>
+    </div>
+    <div class="terminal" style="margin:0">
+      <div class="terminal-bar">
+        <div class="t-dots">
+          <div class="t-dot" style="background:#ff5f57"></div>
+          <div class="t-dot" style="background:#ffbd2e"></div>
+          <div class="t-dot" style="background:#28c840"></div>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--t3);margin-left:10px">ipc responses — real bot confirmations</span>
+        </div>
+      </div>
+      <div class="terminal-body" id="ipc-log" style="max-height:260px">
+        <div class="t-line"><span class="t-ts">$</span><span class="lvl-info t-lvl">READY </span><span class="t-msg"> IPC ready. Actions you run will show the bot\'s actual response here.</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</div><!-- /main -->
+</div><!-- /body -->
+</div><!-- /shell -->
+<div id="toast-zone"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+'use strict';
+
+/* ── Navigation ─────────────────────────────────────────────── */
+function go(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('page-' + page).classList.add('on');
+  el.classList.add('on');
+  if (page === 'database') fetchDbStats();
+  if (page === 'activity') buildHeatmap();
+  if (page === 'modules')  refreshModules();
+}
+
+/* ── Clock ──────────────────────────────────────────────────── */
+function tick() {
+  const n = new Date();
+  setTxt('tb-time', n.toLocaleTimeString('en-GB'));
+  setTxt('tb-date', n.toLocaleDateString('en-GB', {weekday:'short',month:'short',day:'2-digit'}));
+}
+tick(); setInterval(tick, 1000);
+
+/* ── Helpers ────────────────────────────────────────────────── */
+function setTxt(id, v) { const e = document.getElementById(id); if (e) e.textContent = v; }
+function setInd(id, s) {
+  const e = document.getElementById(id); if (!e) return;
+  e.className = 'sys-ind ' + ({ok:'si-ok',warn:'si-warn',off:'si-off',idle:'si-idle'}[s]||'si-idle');
+}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+function toast(msg, type='ok') {
+  const zone = document.getElementById('toast-zone');
+  const el = document.createElement('div');
+  el.className = 'toast-item ' + type;
+  el.textContent = ({ok:'✓ ',err:'✕ ',info:'ℹ ',warn:'⚠ '}[type]||'')+msg;
+  zone.appendChild(el);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('show')));
+  setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),300);},4500);
+}
+
+/* ── IPC Log ─────────────────────────────────────────────────── */
+function logIpc(msg, ok) {
+  const body = document.getElementById('ipc-log');
+  if (!body) return;
+  const el = document.createElement('div');
+  el.className = 't-line';
+  const ts = new Date().toLocaleTimeString('en-GB');
+  el.innerHTML = `<span class="t-ts">[${ts}]</span><span class="${ok?'lvl-ok':'lvl-err'} t-lvl">${ok?'OK    ':'FAIL  '}</span><span class="t-msg"> ${esc(msg)}</span>`;
+  body.appendChild(el);
+  body.scrollTop = body.scrollHeight;
+}
+function clearIpcLog() {
+  const b = document.getElementById('ipc-log');
+  if (b) b.innerHTML = '';
+}
+
+/* ── IPC Caller ─────────────────────────────────────────────── */
+async function ipcAction(action, params={}, confirmMsg='', nowait=false) {
+  if (confirmMsg && !confirm(confirmMsg)) return null;
+  const bar = document.getElementById('ipc-status-bar');
+  if (bar) { bar.textContent = 'Running '+action+'…'; bar.style.color='var(--hi)'; }
+  logIpc('→ '+action+' '+JSON.stringify(params), true);
+  try {
+    const r = await fetch('/api/ipc/command', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action, params, nowait})
+    }).then(r=>r.json());
+    const msg = r.msg||(r.ok?'Done.':r.error||'Unknown error');
+    logIpc('← '+msg, r.ok);
+    toast(msg, r.ok?'ok':'err');
+    if (bar) bar.textContent='';
+    return r;
+  } catch(e) {
+    const msg='Network error: '+e;
+    logIpc('← '+msg, false);
+    toast(msg, 'err');
+    if (bar) bar.textContent='';
+    return {ok:false};
+  }
+}
+
+/* ── Set Status ──────────────────────────────────────────────── */
+async function setStatus() {
+  const text  = document.getElementById('status-text').value.trim();
+  const stype = document.getElementById('status-type').value;
+  if (!text) { toast('Enter a status text first','warn'); return; }
+  await ipcAction('set_status', {text, type:stype});
+}
+
+/* ── Module Manager ─────────────────────────────────────────── */
+const MODULE_META = {
+  automod:         {icon:'🤖',name:'AutoMod',        desc:'Spam, links, caps, word filter'},
+  music:           {icon:'🎵',name:'Music Player',    desc:'YouTube, Spotify, SoundCloud'},
+  music_lyrics:    {icon:'📝',name:'Music Lyrics',    desc:'/lyrics command'},
+  temprooms:       {icon:'🔊',name:'Temp Rooms',      desc:'Dynamic voice channels'},
+  logging:         {icon:'📋',name:'Event Logger',    desc:'Message, member, mod logs'},
+  security:        {icon:'🔒',name:'Security',        desc:'Anti-raid, verification'},
+  role_panels:     {icon:'◎',name:'Role Panels',     desc:'Self-assign role buttons'},
+  autoroles:       {icon:'🎭',name:'Auto-Roles',      desc:'Roles assigned on join'},
+  custom_commands: {icon:'⚡',name:'Custom Commands', desc:'Guild-specific triggers'},
+  reminders:       {icon:'⏰',name:'Reminders',       desc:'/remind command'},
+  afk:             {icon:'💤',name:'AFK System',      desc:'/afk and mention detection'},
+  snipe:           {icon:'👻',name:'Snipe',           desc:'/snipe deleted messages'},
+  aliases:         {icon:'🔗',name:'Aliases',         desc:'Custom command shortcuts'},
+};
+
+let _maintTarget = null;
+
+async function refreshModules() {
+  const grid    = document.getElementById('mod-grid');
+  const loading = document.getElementById('mod-loading');
+  loading.style.display='block'; grid.style.display='none';
+
+  // Ask bot for live state
+  const r = await ipcAction('get_module_state', {}, '', false);
+  const liveState = r?.data?.modules || {};
+
+  // Also read disk cache
+  let diskState = {};
+  try {
+    const d = await fetch('/api/ipc/module-state').then(r=>r.json());
+    if (d.ok) diskState = d.modules || {};
+  } catch(e) {}
+
+  const mods = Object.keys(liveState).length ? liveState : diskState;
+
+  const cards = Object.entries(MODULE_META).map(([key, meta]) => {
+    const m     = mods[key] || {};
+    const on    = m.loaded !== false;
+    const maint = !!m.maintenance;
+    const reason= m.reason || '';
+    return `
+    <div class="mod-card" id="mc-${key}">
+      <div class="mod-top">
+        <span class="mod-ico">${meta.icon}</span>
+        <div class="mod-info">
+          <div class="mod-name">${meta.name}</div>
+          <div class="mod-desc">${meta.desc}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">
+          ${maint ? `<span class="badge b-amber" style="font-size:8px">🔧 MAINT</span>` : ''}
+          <span class="badge ${on?'b-lime':'b-muted'}" style="font-size:8px">${on?'● ON':'○ OFF'}</span>
+        </div>
+      </div>
+      ${maint ? `<div class="mod-reason">Reason: ${esc(reason)||'No reason set'}</div>` : ''}
+      <div class="mod-actions">
+        <button class="act-btn ${on?'mod-off-btn':'mod-on-btn'}"
+          onclick="${on?'disableMod(\''+key+'\')':'enableMod(\''+key+'\')'}">
+          ${on?'⏸ Disable':'▶ Enable'}
+        </button>
+        ${maint
+          ? `<button class="act-btn" onclick="endMaint('${key}')">✓ End Maintenance</button>`
+          : `<button class="act-btn" onclick="openMaint('${key}')">🔧 Set Maintenance</button>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.innerHTML = `<div class="mod-grid-wrap">${cards}</div>
+    <p style="margin-top:12px;font-family:var(--mono);font-size:9px;color:var(--t3)">
+      Enable/Disable loads or unloads the cog live — no restart needed.
+      Maintenance marks the module as unavailable without disabling it.
+    </p>`;
+  loading.style.display='none'; grid.style.display='block';
+}
+
+async function enableMod(key) {
+  const r = await ipcAction('enable_module', {module:key}, `Enable module "${key}"?`);
+  if (r?.ok) setTimeout(refreshModules, 400);
+}
+async function disableMod(key) {
+  const r = await ipcAction('disable_module', {module:key}, `Disable module "${key}"? Users cannot use it until re-enabled.`);
+  if (r?.ok) setTimeout(refreshModules, 400);
+}
+function openMaint(key) {
+  _maintTarget = key;
+  setTxt('maint-name', MODULE_META[key]?.name || key);
+  document.getElementById('maint-reason').value='';
+  const m = document.getElementById('maint-modal');
+  m.style.display='flex';
+}
+function closeMaint() {
+  document.getElementById('maint-modal').style.display='none';
+  _maintTarget=null;
+}
+async function confirmMaint() {
+  const reason = document.getElementById('maint-reason').value.trim() || 'Under maintenance';
+  const key = _maintTarget;
+  closeMaint();
+  const r = await ipcAction('maintenance_mode', {module:key, enable:true, reason}, '', false);
+  if (r?.ok) setTimeout(refreshModules, 300);
+}
+async function endMaint(key) {
+  const r = await ipcAction('maintenance_mode', {module:key, enable:false}, '', false);
+  if (r?.ok) setTimeout(refreshModules, 300);
+}
+
+/* ── Bot Status Poll ─────────────────────────────────────────── */
+async function pollStatus() {
+  try {
+    const d = await fetch('/api/bot-status').then(r=>r.json());
+    const pill  = document.getElementById('status-pill');
+    const ptext = document.getElementById('pill-text');
+    const pingEl= document.getElementById('tb-ping');
+    if (d.online) {
+      pill.classList.remove('offline');
+      ptext.textContent = 'Online · '+d.latency_ms+'ms';
+      const col = d.latency_ms<100?'var(--lime)':d.latency_ms<250?'var(--amber)':'var(--rose)';
+      if (pingEl){pingEl.textContent=d.latency_ms+'ms';pingEl.style.color=col;}
+      setTxt('st-lat',d.latency_ms);
+      setTxt('hb-lat',d.latency_ms+'ms');
+      const lf=document.getElementById('hb-lat-fill');
+      if(lf)lf.style.width=Math.max(5,100-d.latency_ms/5)+'%';
+      if(d.guilds){['st-guilds','hb-guilds','nb-guilds','sys-guild-count','rm-guilds'].forEach(id=>setTxt(id,d.guilds));}
+      if(d.commands_today!==undefined){
+        setTxt('st-today',d.commands_today+' today');
+        setTxt('rm-cmds',d.commands_today);
+        const cf=document.getElementById('rm-cmds-fill');
+        if(cf)cf.style.width=Math.min(100,d.commands_today/5)+'%';
+      }
+      setTxt('sys-bot-tag',d.bot_tag||'Online');
+      setTxt('rm-lat',d.latency_ms+'ms');
+      setInd('si-bot','ok'); setTxt('si-bot-sub',d.bot_tag||'Connected');
+      setInd('si-ws','ok');
+    } else {
+      pill.classList.add('offline');
+      ptext.textContent='Offline';
+      setInd('si-bot','off');
+    }
+    setTxt('last-sync',new Date().toLocaleTimeString());
+  } catch(e){ setTxt('pill-text','Unknown'); }
+}
+pollStatus();
+setInterval(pollStatus,30000);
+
+/* ── Sparkline ──────────────────────────────────────────────── */
+(function(){
+  const ctx=document.getElementById('spark-chart');
+  if(!ctx) return;
+  const labels=[],data=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    labels.push(d.toLocaleDateString('en-GB',{month:'short',day:'2-digit'}));
+    data.push(Math.floor(Math.random()*90+10));
+  }
+  new Chart(ctx.getContext('2d'),{
+    type:'bar',
+    data:{labels,datasets:[{data,borderRadius:4,borderWidth:1,
+      borderColor:'rgba(0,217,255,.7)',
+      backgroundColor:c=>{const g=c.chart.ctx.createLinearGradient(0,0,0,80);g.addColorStop(0,'rgba(0,217,255,.55)');g.addColorStop(1,'rgba(0,217,255,.04)');return g;}}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#0d1020',borderColor:'#1c2038',borderWidth:1,titleColor:'#dde4ff',bodyColor:'#6b7499',titleFont:{family:'JetBrains Mono',size:10},bodyFont:{family:'JetBrains Mono',size:10}}},
+      scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#3a4060',font:{family:'JetBrains Mono',size:9}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#3a4060',font:{family:'JetBrains Mono',size:9}},beginAtZero:true}}}
+  });
+})();
+
+/* ── Database Stats ─────────────────────────────────────────── */
+async function fetchDbStats(){
+  const term=document.getElementById('db-terminal');
+  const grid=document.getElementById('db-table-grid');
+  if(!term) return;
+  term.innerHTML='<div class="t-line"><span class="t-ts">$</span><span class="lvl-info t-lvl">SELECT</span><span class="t-msg"> Querying…</span></div>';
+  try{
+    const d=await fetch('/dev/api/stats').then(r=>r.json());
+    const cols=['cyan','lime','amber','violet','sky','rose'];
+    let th='<div class="t-line"><span class="t-ts">$</span><span class="lvl-ok t-lvl">OK    </span><span class="t-msg"> Connected.</span></div>';
+    let gh='';let ci=0;
+    for(const[k,v] of Object.entries(d)){
+      th+=`<div class="t-line"><span class="t-ts">&gt;&gt;</span><span class="lvl-info t-lvl" style="color:var(--violet)">${k}</span><span class="t-msg"> = <span style="color:var(--lime)">${v.toLocaleString()}</span></span></div>`;
+      gh+=`<div class="sc ${cols[ci%cols.length]}"><div class="sc-top"><span class="sc-ico">📊</span></div><div class="sc-val">${v.toLocaleString()}</div><div class="sc-lbl">${k}</div></div>`;
+      ci++;
+    }
+    th+='<div class="t-line"><span class="t-ts">$</span><span class="lvl-ok t-lvl">DONE  </span><span class="t-msg"> Complete.</span></div>';
+    term.innerHTML=th; if(grid) grid.innerHTML=gh;
+  }catch(e){term.innerHTML=`<div class="t-line"><span class="t-ts">$</span><span class="lvl-err t-lvl">ERROR </span><span class="t-msg"> ${e}</span></div>`;}
+}
+
+/* ── Live Log Stream ─────────────────────────────────────────── */
+const logCounts={INFO:0,WARN:0,ERROR:0,SUCCESS:0,CMD:0};
+let logFilter='ALL';
+const LVL_CLS={INFO:'lvl-info',WARN:'lvl-warn',ERROR:'lvl-err',SUCCESS:'lvl-ok',CMD:'lvl-cmd'};
+const socket=io({transports:['websocket','polling'],reconnectionDelay:2000});
+socket.on('connect',()=>{addLog('SUCCESS','WebSocket connected.');socket.emit('subscribe_logs');setInd('si-ws','ok');});
+socket.on('disconnect',()=>{addLog('WARN','WebSocket disconnected.');setInd('si-ws','warn');});
+socket.on('log_batch',data=>{if(data?.events)data.events.forEach(e=>addLog(e.level||'INFO',e.msg,e.ts));});
+socket.on('subscribed',()=>addLog('INFO','Log subscription active.'));
+
+function addLog(lvl,msg,ts=null){
+  const body=document.getElementById('log-body');if(!body) return;
+  const cls=LVL_CLS[lvl]||'lvl-info';
+  const timeStr=ts||new Date().toLocaleTimeString('en-GB');
+  const el=document.createElement('div');
+  el.className='t-line';el.dataset.level=lvl;
+  if(logFilter!=='ALL'&&lvl!==logFilter)el.style.display='none';
+  el.innerHTML=`<span class="t-ts">[${timeStr}]</span><span class="${cls} t-lvl">${lvl.padEnd(7)}</span><span class="t-msg"> ${esc(msg)}</span>`;
+  body.appendChild(el);
+  logCounts[lvl]=(logCounts[lvl]||0)+1;
+  const m={INFO:'lc-info',WARN:'lc-warn',ERROR:'lc-err',SUCCESS:'lc-ok',CMD:'lc-cmd'};
+  if(m[lvl])setTxt(m[lvl],logCounts[lvl]);
+  const auto=document.getElementById('log-auto');
+  if(auto?.checked)body.scrollTop=body.scrollHeight;
+  while(body.children.length>400)body.removeChild(body.firstChild);
+}
+function clearLogs(){
+  const b=document.getElementById('log-body');if(b)b.innerHTML='';
+  Object.keys(logCounts).forEach(k=>logCounts[k]=0);
+  ['lc-info','lc-warn','lc-err','lc-ok','lc-cmd'].forEach(id=>setTxt(id,'0'));
+  toast('Logs cleared','info');
+}
+function filterLogs(lvl){
+  logFilter=lvl;
+  document.querySelectorAll('#log-body .t-line').forEach(el=>{
+    el.style.display=(lvl==='ALL'||el.dataset.level===lvl)?'':'none';
+  });
+}
+
+/* ── Heatmap ─────────────────────────────────────────────────── */
+let heatmapBuilt=false;
+function buildHeatmap(){
+  if(heatmapBuilt)return;heatmapBuilt=true;
+  const g=document.getElementById('heatmap-grid');if(!g)return;
+  for(let i=0;i<364;i++){
+    const c=document.createElement('div');c.className='hm-day';
+    const r=Math.random();c.dataset.v=r<.5?0:r<.7?1:r<.85?2:r<.95?3:4;
+    c.title=`${364-i} days ago`;g.appendChild(c);
+  }
+}
+
+/* ── Guild/Audit Filters ─────────────────────────────────────── */
+function filterGuilds(q){
+  document.querySelectorAll('#guild-grid .guild-card').forEach(el=>{
+    el.style.display=el.dataset.id.includes(q)?'':'none';
+  });
+}
+let _auditAction='';
+function filterAuditType(a){_auditAction=a;applyAuditFilter();}
+function filterAudit(q){applyAuditFilter(q);}
+function applyAuditFilter(q){
+  const s=q!==undefined?q:(document.getElementById('audit-search')||{}).value||'';
+  document.querySelectorAll('#audit-list .audit-row').forEach(el=>{
+    const ma=!_auditAction||el.dataset.action===_auditAction;
+    const ms=!s||el.dataset.search.toLowerCase().includes(s.toLowerCase());
+    el.style.display=(ma&&ms)?'':'none';
+  });
+}
+</script>
+
+<style>
+.mod-grid-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.mod-card{background:var(--s2);border:1px solid var(--e1);border-radius:var(--r2);padding:14px;transition:border-color .15s}
+.mod-card:hover{border-color:var(--e3)}
+.mod-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.mod-ico{font-size:22px;flex-shrink:0;margin-top:1px}
+.mod-info{flex:1;min-width:0}
+.mod-name{font-size:13px;font-weight:700;color:var(--t1)}
+.mod-desc{font-size:10px;color:var(--t3);margin-top:1px}
+.mod-reason{font-family:var(--mono);font-size:9px;color:var(--amber);background:var(--ambd);border:1px solid rgba(255,182,39,.2);border-radius:5px;padding:3px 8px;margin-bottom:8px}
+.mod-actions{display:flex;gap:6px;flex-wrap:wrap}
+.mod-on-btn{color:var(--lime)!important;border-color:rgba(45,255,140,.3)!important;background:var(--limd)!important}
+.mod-off-btn{color:var(--rose)!important;border-color:rgba(255,61,107,.3)!important;background:var(--rosd)!important}
+.mod-on-btn:hover{background:var(--lime)!important;color:var(--void)!important}
+.mod-off-btn:hover{background:var(--rose)!important;color:#fff!important}
+</style>
+</body>
+</html>

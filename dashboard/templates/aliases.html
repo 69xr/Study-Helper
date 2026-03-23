@@ -4,7 +4,7 @@
 {% block breadcrumb %}{{ guild.get('name','') }} · Command Aliases{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="ph">
   <div>
     <h1>Command Aliases</h1>
     <p class="sub">Create shortcuts for slash commands. Type the alias word in chat and the command runs instantly.</p>
@@ -17,7 +17,7 @@
   No prefix. No slash. Just the word.
 </div>
 
-<div class="grid-2" style="gap:20px;margin-bottom:20px;">
+<div class="g2" style="gap:20px;margin-bottom:20px;">
 
   <!-- Add alias -->
   <div class="card">
@@ -57,12 +57,12 @@
       ] %}
       {% for alias, cmd, desc in examples %}
       <div style="display:flex;align-items:center;justify-content:space-between;
-                  padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;">
+                  padding:8px 12px;background:var(--layer2);border:1px solid var(--b1);border-radius:8px;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <code style="background:var(--accent);color:#fff;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:700;">{{ alias }}</code>
-          <span style="color:var(--muted);font-size:12px;">→</span>
-          <span style="font-family:var(--mono);font-size:12px;color:var(--accent);">/{{ cmd }}</span>
-          <span style="font-size:11px;color:var(--muted);">{{ desc }}</span>
+          <code style="background:var(--x);color:#fff;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:700;">{{ alias }}</code>
+          <span style="color:var(--t3);font-size:12px;">→</span>
+          <span style="font-family:var(--mono);font-size:12px;color:var(--x);">/{{ cmd }}</span>
+          <span style="font-size:11px;color:var(--t3);">{{ desc }}</span>
         </div>
         <button class="btn btn-ghost btn-xs" onclick="quickAdd('{{ alias }}','{{ cmd }}')">Add</button>
       </div>
@@ -76,11 +76,11 @@
   <div class="card-head">
     <span class="card-title">Active Aliases ({{ aliases|length }})</span>
     {% if aliases %}
-    <span style="font-size:11px;color:var(--muted);">Members type the alias word → command runs</span>
+    <span style="font-size:11px;color:var(--t3);">Members type the alias word → command runs</span>
     {% endif %}
   </div>
   {% if aliases %}
-  <div class="table-wrap">
+  <div class="tbl-wrap">
     <table>
       <thead><tr>
         <th>Alias</th><th>→ Runs Command</th><th>Created</th><th>Action</th>
@@ -89,13 +89,13 @@
       {% for a in aliases %}
       <tr id="arow-{{ a.alias }}">
         <td>
-          <code style="background:var(--accent);color:#fff;padding:3px 10px;border-radius:6px;font-size:13px;font-weight:700;">{{ a.alias }}</code>
+          <code style="background:var(--x);color:#fff;padding:3px 10px;border-radius:6px;font-size:13px;font-weight:700;">{{ a.alias }}</code>
         </td>
         <td>
-          <span style="font-family:var(--mono);font-size:13px;color:var(--accent);">/{{ a.command }}</span>
+          <span style="font-family:var(--mono);font-size:13px;color:var(--x);">/{{ a.command }}</span>
         </td>
         <td>
-          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">{{ a.created_at[:10] }}</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--t3);">{{ a.created_at[:10] }}</span>
         </td>
         <td>
           <button class="btn btn-danger btn-xs" onclick="deleteAlias('{{ a.alias }}')">Delete</button>
@@ -106,8 +106,8 @@
     </table>
   </div>
   {% else %}
-  <div class="empty-state">
-    <div class="empty-icon">⚡</div>
+  <div class="empty">
+    <div class="empty-ico">⚡</div>
     <div class="empty-title">No aliases yet</div>
     <div class="empty-sub">Add one above or click "Add" on a popular example.</div>
   </div>

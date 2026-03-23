@@ -1,6 +1,6 @@
 """
 cogs/roles.py
-Commands: /setuprole  /panels  /deletepanel
+Role panel views — panel creation is handled by the dashboard
 
 FIX: AppCommandChannel.resolve() is called to get a real TextChannel before .send()
 """
@@ -80,10 +80,12 @@ class RolePickerView(discord.ui.View):
         super().__init__(timeout=None)
         for entry in entries:
             if isinstance(entry, dict):
-                # DB restore path — use stored role_id; label gets resolved live in button callback
+                # DB restore path — label will be filled in properly when the bot
+                # has guild context. Use stored label if available, else fall back
+                # to a humanised placeholder (role name resolved in button callback).
                 self.add_item(RoleButton(
                     role_id=entry["role_id"],
-                    label=str(entry["role_id"]),  # placeholder; real name shown after interaction
+                    label=entry.get("label") or "Role",
                     emoji=entry.get("emoji"),
                     style=entry.get("style", 1),
                 ))
@@ -203,7 +205,7 @@ class ChannelSelectView(discord.ui.View):
                 style_int = (idx % 4) + 1   # 1-4
 
                 role_entries.append((role, emoji, style_int))
-                db_entries.append({"role_id": role.id, "emoji": emoji, "style": style_int})
+                db_entries.append({"role_id": role.id, "label": role.name, "emoji": emoji, "style": style_int})
             except ValueError:
                 errors.append(f"`{rid}` — not a valid ID")
 
@@ -258,79 +260,6 @@ class ChannelSelectView(discord.ui.View):
 class Roles(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
-    # ── /setuprole ────────────────────────────────────────────
-    @app_commands.command(name="setuprole", description="Create an interactive self-role panel.")
-    @app_commands.checks.has_permissions(manage_roles=True)
-    async def setuprole(self, interaction: discord.Interaction):
-        await interaction.response.send_modal(PanelConfigModal(self.bot))
-
-    # ── /panels ───────────────────────────────────────────────
-    @app_commands.command(name="panels", description="List all role panels in this server.")
-    @app_commands.checks.has_permissions(manage_roles=True)
-    async def panels(self, interaction: discord.Interaction):
-        panels = await db.get_all_role_panels(interaction.guild_id)
-        if not panels:
-            await interaction.response.send_message(
-                embed=error_embed("No Panels", "No role panels exist in this server yet. Use `/setuprole` to create one."),
-                ephemeral=True
-            )
-            return
-
-        embed = discord.Embed(
-            title=f"🎭  Role Panels — {interaction.guild.name}",
-            color=0x5865F2
-        )
-        for p in panels:
-            channel = interaction.guild.get_channel(p["channel_id"])
-            ch_str  = channel.mention if channel else f"(deleted channel {p['channel_id']})"
-            roles   = ", ".join(f"`{e['role_id']}`" for e in p["entries"]) or "none"
-            embed.add_field(
-                name=f"Panel #{p['id']} — {p['title']}",
-                value=f"**Channel:** {ch_str}\n**Roles:** {roles}\n**Created:** {p['created_at'][:10]}",
-                inline=False
-            )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-    # ── /deletepanel ──────────────────────────────────────────
-    @app_commands.command(name="deletepanel", description="Delete a role panel by its ID.")
-    @app_commands.describe(panel_id="The panel ID (from /panels)")
-    @app_commands.checks.has_permissions(manage_roles=True)
-    async def deletepanel(self, interaction: discord.Interaction, panel_id: int):
-        panels = await db.get_all_role_panels(interaction.guild_id)
-        panel  = next((p for p in panels if p["id"] == panel_id), None)
-
-        if not panel:
-            await interaction.response.send_message(
-                embed=error_embed("Not Found", f"No panel with ID `{panel_id}` exists in this server."),
-                ephemeral=True
-            )
-            return
-
-        # Try to delete the original message
-        ch = interaction.guild.get_channel(panel["channel_id"])
-        if ch:
-            try:
-                msg = await ch.fetch_message(panel["message_id"])
-                await msg.delete()
-            except (discord.NotFound, discord.Forbidden):
-                pass
-
-        await db.delete_role_panel(panel_id, interaction.guild_id)
-        await interaction.response.send_message(
-            embed=success_embed("Panel Deleted", f"Panel **#{panel_id}** (`{panel['title']}`) has been deleted."),
-            ephemeral=True
-        )
-
-    # ── Error handler ─────────────────────────────────────────
-    async def cog_app_command_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        if isinstance(error, app_commands.MissingPermissions):
-            if not interaction.response.is_done():
-                await interaction.response.send_message(
-                    embed=error_embed("Missing Permissions", "You need **Manage Roles** to use this command."),
-                    ephemeral=True
-                )
-
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Roles(bot))

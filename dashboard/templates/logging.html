@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Logging{% endblock %}
+{% block page_title %}LOGGING{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Logging{% endblock %}
+{% block content %}
+<div class="ph">
+  <div><h1>Logging</h1><p class="sub">Configure which events are logged and where. Each event type can have its own channel.</p></div>
+</div>
+
+<div class="alert" style="padding:12px 16px;background:rgba(61,139,255,.1);border:1px solid rgba(61,139,255,.25);border-radius:10px;font-size:13px;margin-bottom:20px;color:var(--t2);">
+  💡 <strong>Tip:</strong> Set a <strong>Default Log Channel</strong> to catch all events in one place, or assign individual channels per event type for organized logging.
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-head"><span class="card-title">🌐 Default Log Channel</span></div>
+  <div class="form-group" style="margin-bottom:0;">
+    <label class="form-label">Channel ID — catches all unassigned events</label>
+    <input class="form-control" id="log_channel" value="{{ settings.get('log_channel','') or '' }}"
+           placeholder="Channel ID" onchange="saveLog('log_channel', this.value)">
+    <span class="form-hint">Leave event-specific channels empty to use this one as fallback.</span>
+  </div>
+</div>
+
+<div class="g2" style="gap:16px;">
+  {% set log_types = [
+    ('log_msg_delete',    '🗑️', 'Message Deleted',   'Logs deleted messages with content and author'),
+    ('log_msg_edit',      '✏️', 'Message Edited',    'Logs message edits with before/after content'),
+    ('log_member_join',   '📥', 'Member Joined',     'Logs new members joining with account age warning'),
+    ('log_member_leave',  '📤', 'Member Left',       'Logs members leaving with role list'),
+    ('log_member_update', '✏️', 'Member Updated',    'Logs nickname changes'),
+    ('log_voice',         '🔊', 'Voice Activity',    'Logs voice join/leave/move events'),
+    ('log_mod_actions',   '🛡️', 'Mod Actions',      'Logs kicks, bans, warns, timeouts'),
+    ('log_roles',         '🎭', 'Role Changes',      'Logs role assigned/removed and role create/delete'),
+  ] %}
+  {% for key, icon, label, desc in log_types %}
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">{{ icon }} {{ label }}</span>
+      {% if settings.get(key) %}<span class="badge bgreen">Active</span>{% else %}<span class="badge bmuted">Inactive</span>{% endif %}
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label">Log Channel ID</label>
+      <input class="form-control" value="{{ settings.get(key,'') or '' }}"
+             placeholder="Leave empty to use default"
+             onchange="saveLog('{{ key }}', this.value)">
+      <span class="form-hint">{{ desc }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const GUILD = "{{ guild_id }}";
+async function saveLog(key, value) {
+  const r = await apiPost(`/dashboard/${GUILD}/logging/save`, {[key]: value});
+  toast(r.ok ? 'Saved!' : (r.error||'Error'), r.ok ? 'ok' : 'err');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Music{% endblock %}
+{% block page_title %}MUSIC{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Music{% endblock %}
+
+{% block content %}
+<style>
+.music-hero{position:relative;background:linear-gradient(135deg,var(--layer) 0%,rgba(29,185,84,.06) 50%,var(--layer) 100%);border:1px solid rgba(29,185,84,.15);border-radius:var(--r3);padding:28px;margin-bottom:20px;overflow:hidden}
+.music-hero::before{content:'♫';position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:96px;opacity:.04;line-height:1;pointer-events:none}
+.platform-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:99px;font-size:11px;font-weight:600;border:1px solid}
+.platform-pill.yt{background:rgba(255,0,0,.1);border-color:rgba(255,0,0,.2);color:#ff4444}
+.platform-pill.sp{background:rgba(29,185,84,.1);border-color:rgba(29,185,84,.2);color:#1DB954}
+.platform-pill.sc{background:rgba(255,115,0,.1);border-color:rgba(255,115,0,.2);color:#ff7300}
+.platform-pill.url{background:var(--bd);border-color:rgba(56,189,248,.2);color:var(--blue)}
+.ctrl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.ctrl-card{background:var(--layer2);border:1px solid var(--b1);border-radius:var(--r2);padding:14px;text-align:center;transition:border-color .15s,background .15s}
+.ctrl-card:hover{border-color:var(--b3);background:var(--layer3)}
+.ctrl-icon{font-size:26px;margin-bottom:7px}
+.ctrl-label{font-size:12px;font-weight:700;color:var(--t1);margin-bottom:2px}
+.ctrl-desc{font-size:10px;color:var(--t3)}
+.cmd-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--b1)}
+.cmd-row:last-child{border-bottom:none}
+.cmd-name{font-family:var(--mono);font-size:11px;color:var(--x2);background:var(--xd);padding:2px 9px;border-radius:6px;white-space:nowrap}
+.cmd-desc{font-size:12px;color:var(--t2);flex:1;padding:0 14px}
+.cmd-ex{font-family:var(--mono);font-size:10px;color:var(--t3);background:var(--layer3);padding:2px 7px;border-radius:5px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.req-row{display:flex;align-items:center;gap:12px;padding:11px;background:var(--layer2);border:1px solid var(--b1);border-radius:var(--r);margin-bottom:8px}
+.req-row:last-child{margin-bottom:0}
+</style>
+
+<div class="music-hero">
+  <div class="ph" style="margin:0;padding:0;border:none;background:none">
+    <div class="ph-left">
+      <h1 style="font-size:22px;margin-bottom:5px">🎵 Music System</h1>
+      <p style="color:var(--t2);margin-bottom:13px">Multi-platform playback · Queue management · Button controls in Discord</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="platform-pill yt">▶️ YouTube</span>
+        <span class="platform-pill sp">🟢 Spotify</span>
+        <span class="platform-pill sc">🔶 SoundCloud</span>
+        <span class="platform-pill url">🔗 Direct URL</span>
+      </div>
+    </div>
+    <div class="ph-right">
+      <div style="display:flex;align-items:center;gap:6px;background:var(--gd);border:1px solid rgba(34,211,164,.2);padding:8px 14px;border-radius:var(--r2)">
+        <span style="width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse-dot 2s infinite"></span>
+        <span style="font-size:12px;font-weight:600;color:var(--green)">All Systems Operational</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 300px;gap:16px;margin-bottom:16px">
+<div>
+<!-- Controls -->
+<div class="card" style="margin-bottom:16px">
+  <div class="card-head">
+    <div class="card-title"><span class="ct-dot" style="background:var(--green)"></span>🎛️ In-Discord Button Controls</div>
+    <span class="badge bgreen">Interactive</span>
+  </div>
+  <div class="card-body">
+    <p style="font-size:12px;color:var(--t2);margin-bottom:14px">The bot posts a live <strong>Now Playing</strong> embed with interactive buttons. No commands needed — just click.</p>
+    <div class="ctrl-grid">
+      {% for emoji, label, desc in [('⏸️','Pause/Resume','Toggle playback'),('⏭️','Skip','Next in queue'),('⏮️','Restart','Replay current'),('🔉','Vol —','−10% volume'),('🔊','Vol +','+10% volume'),('🔂','Track Loop','Repeat this song'),('🔁','Queue Loop','Repeat full queue'),('🔀','Shuffle','Randomise queue'),('⏹️','Stop','Disconnect bot'),('📋','View Queue','Show all tracks')] %}
+      <div class="ctrl-card">
+        <div class="ctrl-icon">{{ emoji }}</div>
+        <div class="ctrl-label">{{ label }}</div>
+        <div class="ctrl-desc">{{ desc }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Commands -->
+<div class="card">
+  <div class="card-head">
+    <div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>All Music Commands</div>
+  </div>
+  <div class="card-body" style="padding-top:0">
+    {% for cmd, desc, ex in [
+      ('/play <query>','YouTube search, URL, or Spotify link','/play lo-fi chill beats'),
+      ('/play <playlist-url>','Load an entire playlist (YT or Spotify)','/play https://open.spotify.com/playlist/…'),
+      ('/pause','Pause current playback','/pause'),
+      ('/resume','Resume paused track','/resume'),
+      ('/skip','Skip to next track','/skip'),
+      ('/stop','Stop and disconnect from voice','/stop'),
+      ('/queue','View full track queue with progress','/queue'),
+      ('/nowplaying','Current track with live progress bar','/nowplaying'),
+      ('/volume <0-150>','Set volume level (150 = boosted)','/volume 80'),
+      ('/loop track','Loop the current track','/loop track'),
+      ('/loop queue','Loop the full queue','/loop queue'),
+      ('/loop off','Disable looping','/loop off'),
+      ('/shuffle','Toggle shuffle mode — randomises queue','/shuffle'),
+      ('/remove <pos>','Remove track at position from queue','/remove 3'),
+      ('/clearqueue','Clear queue, keep current playing','/clearqueue'),
+      ('/lyrics','Fetch lyrics for current track','/lyrics'),
+      ('/join','Join your voice channel','/join'),
+      ('/leave','Disconnect bot from voice','/leave'),
+    ] %}
+    <div class="cmd-row">
+      <span class="cmd-name">{{ cmd }}</span>
+      <span class="cmd-desc">{{ desc }}</span>
+      <span class="cmd-ex">{{ ex }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+</div>
+
+<!-- Right sidebar -->
+<div>
+<!-- Requirements -->
+<div class="card" style="margin-bottom:16px">
+  <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--red)"></span>Requirements</div></div>
+  <div class="card-body" style="padding-top:0">
+    {% for icon, name, cmd, note in [('📦','yt-dlp','pip install yt-dlp','Streams audio from YouTube & more'),('🔊','FFmpeg','ffmpeg.org/download.html','Audio transcoding required'),('🔐','PyNaCl','pip install PyNaCl','Voice encryption for Discord')] %}
+    <div class="req-row">
+      <span style="font-size:20px">{{ icon }}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">{{ name }}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--t3)">{{ cmd }}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:1px">{{ note }}</div>
+      </div>
+      <span class="badge bred" style="font-size:9px;flex-shrink:0">Required</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Tips -->
+<div class="card" style="margin-bottom:16px">
+  <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--violet)"></span>Pro Tips</div></div>
+  <div class="card-body" style="padding-top:0">
+    {% for icon, tip in [('🎯','Use Artist + Song Name for best search results'),('📋','Spotify resolves via yt-dlp — no API key needed'),('⏳','Large playlists queue all tracks but load progressively'),('🔇','Bot auto-leaves after 30 s if channel is empty'),('⚡','Use /alias to set shortcuts e.g. p → play'),('🔊','Volume 100% = original · 150% = boosted audio')] %}
+    <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--b1)">
+      <span style="font-size:15px;flex-shrink:0">{{ icon }}</span>
+      <span style="font-size:11px;color:var(--t2);line-height:1.4">{{ tip }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Spotify card -->
+<div class="card" style="border-color:rgba(29,185,84,.2);background:linear-gradient(135deg,var(--layer),rgba(29,185,84,.04))">
+  <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:#1DB954"></span>🟢 Spotify Support</div></div>
+  <div class="card-body" style="padding-top:0">
+    <p style="font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:10px">Paste any Spotify <strong>track</strong>, <strong>album</strong>, or <strong>playlist</strong> URL. Each track resolves to YouTube automatically — no Spotify API key needed.</p>
+    <div style="background:var(--layer3);border-radius:var(--r);padding:10px">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Example URL</div>
+      <div style="font-family:var(--mono);font-size:10px;color:#1DB954;word-break:break-all">https://open.spotify.com/playlist/37i9dQZF1DX…</div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- Settings card -->
+<div class="card">
+  <div class="card-head">
+    <div class="card-title"><span class="ct-dot" style="background:var(--x)"></span>⚙️ Music Configuration</div>
+    <span style="font-size:11px;color:var(--t3)">Edit config.py to change these defaults</span>
+  </div>
+  <div class="card-body">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+      {% for icon, title, desc, val in [('🔊','Default Volume','Volume for each new session','DEFAULT_VOLUME = 50'),('📋','Max Queue Size','Max tracks per queue','MAX_QUEUE_SIZE = 100'),('🤖','FFmpeg Path','Path to ffmpeg binary','FFMPEG_PATH = "ffmpeg"'),('🎭','DJ Role','Set per-guild via /setdjrole','db: dj_role column')] %}
+      <div style="background:var(--layer2);border:1px solid var(--b1);border-radius:var(--r2);padding:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><span style="font-size:18px">{{ icon }}</span><span style="font-size:13px;font-weight:700">{{ title }}</span></div>
+        <p style="font-size:11px;color:var(--t2);margin-bottom:8px">{{ desc }}</p>
+        <code style="font-family:var(--mono);font-size:10px;background:var(--layer3);padding:3px 8px;border-radius:5px;color:var(--x2)">{{ val }}</code>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

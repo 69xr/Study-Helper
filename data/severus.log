@@ -1,0 +1,45 @@
+22:36:15 [INFO    ] severus: Database ready.
+22:36:15 [INFO    ] severus:   ✅  cogs.general.ping
+22:36:15 [INFO    ] severus:   ✅  cogs.general.avatar
+22:36:15 [INFO    ] severus:   ✅  cogs.general.uptime
+22:36:15 [INFO    ] severus:   ✅  cogs.general.serverinfo
+22:36:15 [INFO    ] severus:   ✅  cogs.general.userinfo
+22:36:15 [INFO    ] severus:   ✅  cogs.general.snipe
+22:36:15 [INFO    ] severus:   ✅  cogs.general.help
+22:36:15 [INFO    ] severus:   ✅  cogs.general.reminders
+22:36:15 [INFO    ] severus:   ✅  cogs.general.afk
+22:36:15 [INFO    ] severus:   ✅  cogs.moderation.kick
+22:36:16 [INFO    ] severus:   ✅  cogs.moderation.ban
+22:36:16 [INFO    ] severus:   ✅  cogs.moderation.warn
+22:36:16 [INFO    ] severus:   ✅  cogs.moderation.clear
+22:36:16 [INFO    ] severus:   ✅  cogs.moderation.mute
+22:36:16 [INFO    ] severus:   ✅  cogs.moderation.slowmode
+22:36:16 [INFO    ] severus:   ✅  cogs.moderation.timeout
+22:36:16 [INFO    ] severus:   ✅  cogs.moderation.notes
+22:36:16 [INFO    ] severus:   ✅  cogs.moderation.thresholds
+22:36:16 [INFO    ] severus:   ✅  cogs.roles.panels
+22:36:16 [INFO    ] severus:   ✅  cogs.settings.aliases
+22:36:16 [INFO    ] severus:   ✅  cogs.automod
+22:36:16 [INFO    ] severus:   ✅  cogs.logging.logger
+22:36:16 [INFO    ] severus:   ✅  cogs.temprooms.rooms
+22:36:16 [INFO    ] severus:   ✅  cogs.temprooms.invite
+22:36:16 [INFO    ] severus:   ✅  cogs.community.custom_commands
+22:36:16 [INFO    ] severus:   ✅  cogs.community.autoroles
+22:36:16 [INFO    ] severus:   ✅  cogs.community.polls
+22:36:16 [INFO    ] severus:   ✅  cogs.community.giveaways
+22:36:16 [INFO    ] severus:   ✅  cogs.community.starboard
+22:36:17 [INFO    ] severus:   ✅  cogs.music.player
+22:36:17 [INFO    ] severus:   ✅  cogs.music.lyrics
+22:36:17 [INFO    ] severus:   ✅  cogs.security.security
+22:36:17 [INFO    ] severus:   ✅  cogs.owner
+22:36:17 [INFO    ] severus:   ✅  cogs.ipc_bridge
+22:36:17 [INFO    ] severus: Restored 0 role panel view(s).
+22:36:17 [INFO    ] severus: VerifyView restored.
+22:36:17 [INFO    ] severus: Syncing slash commands with Discord…
+22:36:18 [INFO    ] severus: ✅  Global sync complete: 81 command(s) registered.
+22:36:18 [INFO    ] severus: ⚡  Dev guild instant sync: 81 command(s).
+22:36:21 [INFO    ] severus: ====================================================
+22:36:21 [INFO    ] severus:   🤖  Logged in as mOoN#1384  (1317208885521813615)
+22:36:21 [INFO    ] severus:   📡  Connected to 1 guild(s)
+22:36:21 [INFO    ] severus: ====================================================
+22:37:03 [INFO    ] severus.ipc: IPC action: get_module_state (id=3c636b0c)

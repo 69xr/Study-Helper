@@ -1,103 +1,81 @@
 {% extends "base.html" %}
-{% block title %}Moderation{% endblock %}
-{% block page_title %}MODERATION{% endblock %}
-{% block breadcrumb %}{{ guild.get('name','') }} · Warnings{% endblock %}
+{% block title %}Warnings{% endblock %}
+{% block page_title %}WARNINGS{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Moderation{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div>
+<div class="ph">
+  <div class="ph-left">
     <h1>Warnings</h1>
-    <p class="sub">{{ total_count }} warning{{ 's' if total_count != 1 }} on record.</p>
+    <p>{{ total_count }} warning{{ 's' if total_count!=1 }} on record in this server.</p>
   </div>
-  <div class="page-actions">
+  <div class="ph-right">
     <button class="btn btn-danger" onclick="clearAllWarns()">⊘ Clear All</button>
   </div>
 </div>
 
-<div class="grid-2" style="gap:20px;">
-
-  <!-- Main table -->
-  <div style="grid-column: 1 / -1;">
-    <div class="card">
-      <!-- Search bar -->
-      <form method="get" style="display:flex;gap:10px;margin-bottom:18px;">
-        <input class="form-control" name="q" value="{{ q }}" placeholder="Search by User ID or reason…" style="max-width:380px;">
-        <button type="submit" class="btn btn-primary btn-sm">Search</button>
-        {% if q %}<a href="?" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
-      </form>
-
-      {% if warnings %}
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th>ID</th><th>User ID</th><th>Mod ID</th>
-            <th>Reason</th><th>Date</th><th>Actions</th>
-          </tr></thead>
-          <tbody id="warn-tbody">
-          {% for w in warnings %}
-          <tr id="wr-{{ w.id }}">
-            <td><span class="id-tag">{{ w.id }}</span></td>
-            <td>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span class="mono" style="font-size:12px;">{{ w.user_id }}</span>
-                <button class="btn btn-ghost btn-xs" onclick="clearUser({{ w.user_id }})" title="Clear all for this user">⊘</button>
-              </div>
-            </td>
-            <td><span class="mono" style="font-size:12px;color:var(--muted);">{{ w.mod_id }}</span></td>
-            <td style="max-width:260px;">
-              <span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2);">{{ w.reason }}</span>
-            </td>
-            <td style="white-space:nowrap;">
-              <span style="font-size:11px;color:var(--muted);font-family:var(--mono);">{{ w.created_at[:16] }}</span>
-            </td>
-            <td>
-              <button class="btn btn-danger btn-xs" onclick="deleteWarn({{ w.id }})">Delete</button>
-            </td>
-          </tr>
-          {% endfor %}
-          </tbody>
-        </table>
+<div class="card">
+  <div class="card-head">
+    <div class="card-title"><span class="ct-dot" style="background:var(--red)"></span>Warning Records</div>
+    <form method="get" style="display:flex;gap:8px">
+      <div class="search-wrap">
+        <span class="search-ico">🔍</span>
+        <input class="search-input" name="q" value="{{ q }}" placeholder="Search user ID or reason…">
       </div>
-
-      <!-- Pagination -->
-      {% if total_pages > 1 %}
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:10px;">
-        <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">
-          Page {{ page }} / {{ total_pages }} · {{ total_count }} total
-        </span>
-        <div style="display:flex;gap:8px;">
-          {% if page > 1 %}
-          <a href="?page={{ page-1 }}&q={{ q }}" class="btn btn-ghost btn-sm">← Prev</a>
-          {% endif %}
-          {% if page < total_pages %}
-          <a href="?page={{ page+1 }}&q={{ q }}" class="btn btn-ghost btn-sm">Next →</a>
-          {% endif %}
-        </div>
-      </div>
-      {% endif %}
-
-      {% else %}
-      <div class="empty-state">
-        <div class="empty-icon">✓</div>
-        <div class="empty-title">{% if q %}No results for "{{ q }}"{% else %}No warnings{% endif %}</div>
-        <div class="empty-sub">{% if q %}Try a different search.{% else %}This server has no warnings on record.{% endif %}</div>
-      </div>
-      {% endif %}
+      <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      {% if q %}<a href="?" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+    </form>
+  </div>
+  {% if warnings %}
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>User</th><th>Moderator</th><th>Reason</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody id="warn-tbody">
+      {% for w in warnings %}
+      <tr id="wr-{{ w.id }}">
+        <td><span class="id-tag">{{ w.id }}</span></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="mtag">{{ w.user_id }}</span>
+            <button class="btn btn-ghost btn-xs" onclick="clearUser({{ w.user_id }})" title="Clear all for user">⊘</button>
+          </div>
+        </td>
+        <td><span class="mtag" style="color:var(--t3)">{{ w.mod_id }}</span></td>
+        <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)">{{ w.reason }}</td>
+        <td><span class="mtag">{{ w.created_at[:16] }}</span></td>
+        <td><button class="btn btn-danger btn-xs" onclick="deleteWarn({{ w.id }})">Delete</button></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if total_pages > 1 %}
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-top:1px solid var(--b1)">
+    <span class="mtag">Page {{ page }} / {{ total_pages }} · {{ total_count }} total</span>
+    <div style="display:flex;gap:8px">
+      {% if page>1 %}<a href="?page={{ page-1 }}&q={{ q }}" class="btn btn-ghost btn-sm">← Prev</a>{% endif %}
+      {% if page<total_pages %}<a href="?page={{ page+1 }}&q={{ q }}" class="btn btn-ghost btn-sm">Next →</a>{% endif %}
     </div>
   </div>
-
+  {% endif %}
+  {% else %}
+  <div class="empty">
+    <div class="empty-ico">✓</div>
+    <div class="empty-title">{% if q %}No results for "{{ q }}"{% else %}No warnings{% endif %}</div>
+    <div class="empty-sub">{% if q %}Try a different search.{% else %}This server has a clean record.{% endif %}</div>
+  </div>
+  {% endif %}
 </div>
 
-<!-- Most warned users sidebar card -->
 {% if top_warned %}
-<div class="card" style="margin-top:20px;">
-  <div class="card-head"><span class="card-title">Most Warned Users</span></div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+<div class="card">
+  <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>Most Warned Users</div></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:0 18px 18px">
     {% for u in top_warned %}
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;">
-      <span class="mono" style="font-size:12px;">{{ u.user_id }}</span>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span class="badge badge-red">{{ u.cnt }} warn{{ 's' if u.cnt != 1 }}</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--layer2);border:1px solid var(--b1);border-radius:var(--r2)">
+      <span class="mtag">{{ u.user_id }}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="badge bred">{{ u.cnt }} warn{{ 's' if u.cnt!=1 }}</span>
         <button class="btn btn-ghost btn-xs" onclick="clearUser({{ u.user_id }})">Clear</button>
       </div>
     </div>
@@ -105,38 +83,92 @@
   </div>
 </div>
 {% endif %}
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-title"><span class="ct-dot" style="background:var(--x)"></span>Auto-Escalation Thresholds</div>
+    <span style="font-size:11px;color:var(--t3)">Automatic actions when users hit a warn count</span>
+  </div>
+  <div class="card-body">
+    <div id="thresholds-list" style="margin-bottom:16px;min-height:32px">
+      <div style="color:var(--t3);font-size:13px">Loading thresholds…</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--b1)">
+      <div class="form-group" style="margin-bottom:0;flex:0 0 90px">
+        <label class="form-label">At warns</label>
+        <input class="form-control" type="number" id="th-count" min="1" max="50" placeholder="e.g. 3">
+      </div>
+      <div class="form-group" style="margin-bottom:0;flex:0 0 130px">
+        <label class="form-label">Action</label>
+        <select class="form-control" id="th-action" onchange="toggleDuration()">
+          <option value="mute">🔇 Mute</option><option value="kick">👢 Kick</option><option value="ban">🔨 Ban</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0;flex:0 0 160px" id="th-dur-wrap">
+        <label class="form-label">Duration</label>
+        <select class="form-control" id="th-duration">
+          <option value="600">10 min</option><option value="1800">30 min</option>
+          <option value="3600" selected>1 hour</option><option value="21600">6 hours</option>
+          <option value="43200">12 hours</option><option value="86400">1 day</option>
+          <option value="259200">3 days</option><option value="604800">7 days</option>
+          <option value="0">Permanent</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="saveThreshold()">+ Add Threshold</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 const GUILD = "{{ guild_id }}";
-
-async function deleteWarn(id) {
-  if (!confirm(`Delete warning #${id}?`)) return;
+async function deleteWarn(id){
+  if(!confirm(`Delete warning #${id}?`)) return;
   const r = await apiPost(`/dashboard/${GUILD}/moderation/warn/delete/${id}`);
-  if (r.ok) { document.getElementById(`wr-${id}`)?.remove(); toast(`Warning #${id} deleted`); }
-  else toast(r.error || 'Failed', 'err');
+  if(r.ok){document.getElementById(`wr-${id}`)?.remove();toast(`Warning #${id} deleted`);}
+  else toast(r.error||'Failed','err');
 }
-
-async function clearUser(uid) {
-  if (!confirm(`Clear ALL warnings for user ${uid}?`)) return;
+async function clearUser(uid){
+  if(!confirm(`Clear ALL warnings for ${uid}?`)) return;
   const r = await apiPost(`/dashboard/${GUILD}/moderation/warn/clear/${uid}`);
-  if (r.ok) {
-    document.querySelectorAll('#warn-tbody tr').forEach(row => {
-      if (row.cells[1]?.textContent.includes(uid)) row.remove();
-    });
-    toast(`Cleared all warnings for ${uid}`);
-  } else toast(r.error || 'Failed', 'err');
+  if(r.ok){document.querySelectorAll('#warn-tbody tr').forEach(row=>{if(row.cells[1]?.textContent.includes(uid))row.remove();});toast('Cleared');}
+  else toast(r.error||'Failed','err');
 }
-
-async function clearAllWarns() {
-  if (!confirm('⚠️ Clear ALL warnings for this entire server? This cannot be undone!')) return;
+async function clearAllWarns(){
+  if(!confirm('Clear ALL warnings for this server? Cannot be undone!')) return;
   const r = await apiPost(`/dashboard/${GUILD}/moderation/clearall`);
-  if (r.ok) {
-    document.getElementById('warn-tbody').innerHTML =
-      `<tr><td colspan="6"><div class="empty-state" style="padding:32px 0;"><div class="empty-icon">✓</div><div class="empty-title">All cleared</div></div></td></tr>`;
-    toast('All warnings cleared');
-  } else toast(r.error || 'Failed', 'err');
+  if(r.ok){document.getElementById('warn-tbody').innerHTML='<tr><td colspan="6"><div class="empty" style="padding:28px"><div class="empty-ico">✓</div><div class="empty-title">All cleared</div></div></td></tr>';toast('All warnings cleared');}
+  else toast(r.error||'Failed','err');
 }
+const AL = {mute:'🔇 Mute',kick:'👢 Kick',ban:'🔨 Ban'};
+function fmt(s){if(!s)return 'Permanent';const d=Math.floor(s/86400),h=Math.floor((s%86400)/3600),m=Math.floor((s%3600)/60);return[d&&`${d}d`,h&&`${h}h`,m&&`${m}m`].filter(Boolean).join(' ')||`${s}s`;}
+async function loadThresholds(){
+  const list = document.getElementById('thresholds-list');
+  try{
+    const rows = await fetch(`/dashboard/${GUILD}/warn-thresholds`).then(r=>r.json());
+    if(!rows.length){list.innerHTML='<div style="color:var(--t3);font-size:13px">No thresholds set. Add one below.</div>';return;}
+    list.innerHTML = rows.map(r=>`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--b1)">
+      <span style="font-size:13px;font-weight:700;min-width:110px">At <span style="color:var(--amber)">${r.count}</span> warns</span>
+      <span class="badge ${r.action==='ban'?'bred':r.action==='kick'?'bamber':'bx'}">${AL[r.action]}${r.action==='mute'?' · '+fmt(r.duration):''}</span>
+      <button class="btn btn-danger btn-xs" onclick="deleteThreshold(${r.count})" style="margin-left:auto">Remove</button>
+    </div>`).join('');
+  }catch(e){list.innerHTML='<div style="color:var(--t3);font-size:12px">Failed to load.</div>';}
+}
+function toggleDuration(){document.getElementById('th-dur-wrap').style.display=document.getElementById('th-action').value==='mute'?'block':'none';}
+async function saveThreshold(){
+  const count=parseInt(document.getElementById('th-count').value);
+  const action=document.getElementById('th-action').value;
+  const duration=action==='mute'?parseInt(document.getElementById('th-duration').value):null;
+  if(!count||count<1){toast('Enter a valid warn count','err');return;}
+  const r=await apiPost(`/dashboard/${GUILD}/warn-thresholds/save`,{count,action,duration});
+  if(r.ok){toast(`Threshold: ${count} warns → ${action}`);loadThresholds();}else toast(r.error||'Failed','err');
+}
+async function deleteThreshold(count){
+  if(!confirm(`Remove threshold at ${count} warns?`)) return;
+  const r=await apiPost(`/dashboard/${GUILD}/warn-thresholds/delete/${count}`);
+  if(r.ok){toast('Removed');loadThresholds();}else toast(r.error||'Failed','err');
+}
+loadThresholds();
 </script>
 {% endblock %}

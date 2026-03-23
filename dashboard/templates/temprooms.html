@@ -3,29 +3,29 @@
 {% block page_title %}TEMP ROOMS{% endblock %}
 {% block breadcrumb %}{{ guild.get('name','') }} · Temporary Voice Rooms{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="ph">
   <div><h1>Temp Rooms</h1><p class="sub">Users join the designated voice channel to automatically get their own private room.</p></div>
 </div>
 
-<div class="stats-row" style="margin-bottom:20px;">
-  <div class="stat-card sc-blue">
-    <div class="stat-icon">🔊</div>
-    <div class="stat-val">{{ rooms|length }}</div>
-    <div class="stat-lbl">Active Rooms</div>
+<div class="sc-row" style="margin-bottom:20px;">
+  <div class="sc sc-blue">
+    <div class="sc-icon">🔊</div>
+    <div class="sc-val">{{ rooms|length }}</div>
+    <div class="sc-lbl">Active Rooms</div>
   </div>
-  <div class="stat-card sc-green">
-    <div class="stat-icon">⚡</div>
-    <div class="stat-val">{% if settings.get('enabled') %}ON{% else %}OFF{% endif %}</div>
-    <div class="stat-lbl">System Status</div>
+  <div class="sc sc-green">
+    <div class="sc-icon">⚡</div>
+    <div class="sc-val">{% if settings.get('enabled') %}ON{% else %}OFF{% endif %}</div>
+    <div class="sc-lbl">System Status</div>
   </div>
-  <div class="stat-card sc-warn">
-    <div class="stat-icon">🚪</div>
-    <div class="stat-val">{{ settings.get('join_channel','—') or '—' }}</div>
-    <div class="stat-lbl">Join Channel ID</div>
+  <div class="sc sc-amber">
+    <div class="sc-icon">🚪</div>
+    <div class="sc-val">{{ settings.get('join_channel','—') or '—' }}</div>
+    <div class="sc-lbl">Join Channel ID</div>
   </div>
 </div>
 
-<div class="grid-2" style="gap:20px;margin-bottom:20px;">
+<div class="g2" style="gap:20px;margin-bottom:20px;">
   <div class="card">
     <div class="card-head"><span class="card-title">⚙ Configuration</span></div>
     <div class="form-group">
@@ -51,7 +51,7 @@
       <label class="form-label">Room Name Template</label>
       <input class="form-control" id="tr-name" value="{{ settings.get('name_template','{user}\'s Room') or '{user}\'s Room' }}"
              onchange="saveTR('name_template',this.value)">
-      <span class="form-hint">Use <code style="background:var(--surface3);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:10px;">{user}</code> for the member's display name.</span>
+      <span class="form-hint">Use <code style="background:var(--layer3);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:10px;">{user}</code> for the member's display name.</span>
     </div>
     <div class="form-row">
       <div class="form-group" style="margin-bottom:0;">
@@ -73,7 +73,7 @@
 
   <div class="card">
     <div class="card-head"><span class="card-title">📖 How It Works</span></div>
-    <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:var(--text2);">
+    <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:var(--t2);">
       <div style="display:flex;gap:10px;align-items:flex-start;">
         <span style="font-size:18px;flex-shrink:0;">1️⃣</span>
         <div><strong>Set up</strong> — set the Join Channel ID above and enable the system.</div>
@@ -95,9 +95,9 @@
         <div><strong>Auto-delete</strong> — room is deleted automatically when everyone leaves.</div>
       </div>
     </div>
-    <div style="margin-top:16px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">Bot Commands for Users</div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.8;">
+    <div style="margin-top:16px;padding:12px;background:var(--layer2);border:1px solid var(--b1);border-radius:9px;">
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px;">Bot Commands for Users</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--t2);line-height:1.8;">
         /temproom rename · /temproom limit · /temproom lock<br>
         /temproom unlock · /temproom kick · /temproom ban<br>
         /temproom unban · /temproom transfer · /temproom delete
@@ -109,18 +109,18 @@
 <div class="card">
   <div class="card-head"><span class="card-title">🔊 Active Rooms ({{ rooms|length }})</span></div>
   {% if rooms %}
-  <div class="table-wrap">
+  <div class="tbl-wrap">
     <table>
       <thead><tr><th>Channel ID</th><th>Owner ID</th><th>Name</th><th>Status</th><th>Limit</th><th>Created</th><th>Actions</th></tr></thead>
       <tbody>
       {% for r in rooms %}
       <tr id="room-{{ r.channel_id }}">
         <td><span class="id-tag">{{ r.channel_id }}</span></td>
-        <td><span class="mono" style="font-size:11px;">{{ r.owner_id }}</span></td>
+        <td><span class="mtag" style="font-size:11px;">{{ r.owner_id }}</span></td>
         <td><span style="font-weight:600;">{{ r.name }}</span></td>
-        <td>{% if r.locked %}<span class="badge badge-red">🔒 Locked</span>{% else %}<span class="badge badge-green">🔓 Open</span>{% endif %}</td>
-        <td><span class="mono">{{ r.user_limit or '∞' }}</span></td>
-        <td><span style="font-family:var(--mono);font-size:10px;color:var(--muted);">{{ r.created_at[:16].replace('T',' ') }}</span></td>
+        <td>{% if r.locked %}<span class="badge bred">🔒 Locked</span>{% else %}<span class="badge bgreen">🔓 Open</span>{% endif %}</td>
+        <td><span class="mtag">{{ r.user_limit or '∞' }}</span></td>
+        <td><span style="font-family:var(--mono);font-size:10px;color:var(--t3);">{{ r.created_at[:16].replace('T',' ') }}</span></td>
         <td><button class="btn btn-danger btn-xs" onclick="deleteRoom({{ r.channel_id }})">Remove Record</button></td>
       </tr>
       {% endfor %}
@@ -128,8 +128,8 @@
     </table>
   </div>
   {% else %}
-  <div class="empty-state">
-    <div class="empty-icon">🔊</div>
+  <div class="empty">
+    <div class="empty-ico">🔊</div>
     <div class="empty-title">No active rooms</div>
     <div class="empty-sub">Configure a Join Channel above and enable the system to get started.</div>
   </div>

@@ -1,5 +1,5 @@
 """
-dashboard/app.py  —  Flask dashboard with Discord OAuth2
+dashboard/app.py  —  Flask dashboard with Discord OAuth2 + SocketIO
 Run separately from the bot:  python dashboard/app.py
 """
 import sys, os
@@ -9,8 +9,9 @@ from flask import (
     Flask, render_template, redirect, url_for,
     session, request, jsonify, flash
 )
+from flask_socketio import SocketIO, emit
 import requests as req
-import asyncio, aiosqlite, json
+import asyncio, aiosqlite, json, threading, time
 from functools import wraps
 from datetime import datetime, timezone
 import config
@@ -19,6 +20,26 @@ import hashlib, pickle, pathlib
 
 app = Flask(__name__)
 app.secret_key = config.DASHBOARD_SECRET_KEY
+
+# ── Flask-SocketIO ─────────────────────────────────────────────
+#  async_mode='threading' works with Flask dev server + eventlet/gevent.
+#  For production swap to async_mode='eventlet' after pip install eventlet.
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading", logger=False, engineio_logger=False)
+
+# ── IPC ───────────────────────────────────────────────────────
+try:
+    from utils.ipc import (dash_read_events, dash_send_command,
+                           dash_get_recent_logs, dash_poll_ack,
+                           read_module_state)
+    _IPC_AVAILABLE = True
+except Exception as _e:
+    print(f"  ⚠  IPC not available: {_e}")
+    _IPC_AVAILABLE = False
+    def dash_read_events(since=0): return [], since
+    def dash_send_command(action, params=None, cmd_id=None): return ""
+    def dash_get_recent_logs(n=100): return []
+    def dash_poll_ack(cmd_id, max_wait=8): return {"ok": False, "msg": "IPC not available"}
+    def read_module_state(): return {}
 
 # ─────────────────────────────────────────────────────────────
 #  DB AUTO-INIT
@@ -316,7 +337,15 @@ def dashboard(guild_id):
 #  SETTINGS
 # ─────────────────────────────────────────────────────────────
 
-ALLOWED_SETTINGS = {"log_channel", "welcome_channel", "welcome_msg", "mute_role"}
+ALLOWED_SETTINGS = {
+    "log_channel", "welcome_channel", "welcome_msg", "mute_role",
+    "verify_role", "unverified_role",
+    "anti_raid", "raid_threshold", "min_account_age",
+    "dj_role",
+    "log_msg_delete", "log_msg_edit", "log_member_join",
+    "log_member_leave", "log_member_update", "log_voice",
+    "log_mod_actions", "log_roles",
+}
 
 @app.route("/dashboard/<guild_id>/settings", methods=["GET", "POST"])
 @login_required
@@ -473,29 +502,6 @@ def blacklist_remove(guild_id, user_id):
     return jsonify({"ok": True})
 
 # ─────────────────────────────────────────────────────────────
-#  ANALYTICS
-# ─────────────────────────────────────────────────────────────
-
-@app.route("/dashboard/<guild_id>/analytics")
-@login_required
-@guild_access_required
-def analytics(guild_id):
-    period = request.args.get("period", "14")
-    try: period = max(7, min(90, int(period)))
-    except: period = 14
-    top_cmds     = run_async(db_fetch("SELECT command, COUNT(*) as uses FROM command_stats WHERE guild_id=? GROUP BY command ORDER BY uses DESC LIMIT 12", (guild_id,)))
-    daily        = run_async(db_fetch(f"SELECT DATE(used_at) as day, COUNT(*) as uses FROM command_stats WHERE guild_id=? AND used_at >= DATE('now','-{period} days') GROUP BY day ORDER BY day", (guild_id,)))
-    hourly       = run_async(db_fetch("SELECT strftime('%H',used_at) as hr, COUNT(*) as uses FROM command_stats WHERE guild_id=? AND used_at >= DATE('now','-7 days') GROUP BY hr ORDER BY hr", (guild_id,)))
-    total_cmds   = (run_async(db_fetchone("SELECT COUNT(*) as c FROM command_stats WHERE guild_id=?",                              (guild_id,))) or {}).get("c", 0)
-    unique_users = (run_async(db_fetchone("SELECT COUNT(DISTINCT user_id) as c FROM command_stats WHERE guild_id=?",               (guild_id,))) or {}).get("c", 0)
-    today_cmds   = (run_async(db_fetchone("SELECT COUNT(*) as c FROM command_stats WHERE guild_id=? AND DATE(used_at)=DATE('now')",(guild_id,))) or {}).get("c", 0)
-    return render_template("analytics.html",
-        guild=_guild(guild_id), guild_id=guild_id, user=session["user"],
-        top_cmds=top_cmds, daily=daily, hourly=hourly, period=period,
-        total_cmds=total_cmds, unique_users=unique_users, today_cmds=today_cmds)
-
-# ─────────────────────────────────────────────────────────────
-#  AUDIT LOG  ← new page
 # ─────────────────────────────────────────────────────────────
 
 @app.route("/dashboard/<guild_id>/audit")
@@ -624,20 +630,26 @@ def aliases(guild_id):
     ))
     # Full command list for the UI dropdown
     all_cmds = [
-        "ping","avatar","uptime","botinfo","help",
-        "server","userinfo","roles",
-        "kick","ban","unban","clear","warn","warnings","clearwarns","delwarn",
-        "setuprole","panels","deletepanel",
-        "setlog","setwelcome","settings",
-        "ticketsetup",
-        "ticket open","ticket close","ticket claim","ticket add",
-        "ticket remove","ticket panel","ticket transcript",
-        "balance","daily","work","pay","leaderboard","shop","buy","inventory",
-        "eco give","eco take","eco reset","eco additem","eco removeitem",
-        "rank","levels","levelsetup","setlevelrole","removelevelrole","resetxp",
-        "automod toggle","automod spam","automod links","automod words",
-        "automod caps","automod mentions","automod exempt","automod status",
-        "blacklist","unblacklist","blacklistview","reload","shutdown","announce","botstats","dm",
+        "ping", "avatar", "uptime", "help", "server", "userinfo", "snipe",
+        "remind", "reminders", "remindcancel",
+        "kick", "ban", "unban", "mute", "unmute", "setupmute",
+        "timeout", "untimeout",
+        "warn", "warnings", "clearwarns", "delwarn", "clear", "slowmode",
+        "warnthreshold set", "warnthreshold list", "warnthreshold remove",
+        "panels", "autorole add", "autorole remove", "autorole list",
+        "setlog", "setwelcome", "settings",
+        "temproom setup", "temproom rename", "temproom limit",
+        "temproom lock", "temproom unlock", "temproom kick",
+        "temproom ban", "temproom unban", "temproom transfer",
+        "temproom delete", "temproom info",
+        "play", "pause", "resume", "skip", "stop", "queue",
+        "nowplaying", "volume", "loop", "shuffle", "remove", "join", "leave",
+        "automod toggle", "automod spam", "automod links", "automod words",
+        "automod caps", "automod mentions", "automod exempt", "automod status",
+        "alias add", "alias remove", "alias list",
+        "lockserver", "unlockserver", "antiraid", "verification",
+        "blacklist", "unblacklist", "blacklistview",
+        "reload", "shutdown", "announce", "botstats", "dm",
     ]
     return render_template("aliases.html",
         guild=_guild(guild_id), guild_id=guild_id, user=session["user"],
@@ -672,215 +684,6 @@ def alias_delete(guild_id, alias):
 
 # ─────────────────────────────────────────────────────────────
 #  TICKET SETTINGS SAVE
-# ─────────────────────────────────────────────────────────────
-
-@app.route("/dashboard/<guild_id>/tickets/settings", methods=["POST"])
-@login_required
-@guild_access_required
-def ticket_settings_save(guild_id):
-    d = request.get_json() or {}
-    ALLOWED = {"category_id", "log_channel", "support_role", "ticket_msg", "max_open"}
-    for key, val in d.items():
-        if key in ALLOWED:
-            db_val = None if val == "" else val
-            run_async(db_execute(
-                "INSERT OR IGNORE INTO ticket_settings (guild_id) VALUES (?)", (int(guild_id),)
-            ))
-            run_async(db_execute(
-                f"UPDATE ticket_settings SET {key}=? WHERE guild_id=?",
-                (db_val, guild_id)
-            ))
-    return jsonify({"ok": True})
-
-# ─────────────────────────────────────────────────────────────
-#  TICKETS
-# ─────────────────────────────────────────────────────────────
-
-@app.route("/dashboard/<guild_id>/tickets")
-@login_required
-@guild_access_required
-def tickets(guild_id):
-    status  = request.args.get("status", "")
-    page    = max(1, int(request.args.get("page", 1)))
-    per     = 20
-    off     = (page - 1) * per
-    rows    = run_async(db_fetch(
-        f"SELECT * FROM tickets WHERE guild_id=?{' AND status=?' if status else ''} ORDER BY opened_at DESC LIMIT ? OFFSET ?",
-        (guild_id, status, per, off) if status else (guild_id, per, off)
-    ))
-    total   = (run_async(db_fetchone(
-        f"SELECT COUNT(*) as c FROM tickets WHERE guild_id=?{' AND status=?' if status else ''}",
-        (guild_id, status) if status else (guild_id,)
-    )) or {}).get("c", 0)
-    counts  = {
-        s: (run_async(db_fetchone("SELECT COUNT(*) as c FROM tickets WHERE guild_id=? AND status=?", (guild_id, s))) or {}).get("c", 0)
-        for s in ("open", "closed", "deleted")
-    }
-    settings = run_async(db_fetchone("SELECT * FROM ticket_settings WHERE guild_id=?", (guild_id,))) or {}
-    return render_template("tickets.html",
-        guild=_guild(guild_id), guild_id=guild_id, user=session["user"],
-        tickets=rows, total_count=total, status=status, counts=counts,
-        total_pages=max(1, (total + per - 1) // per), page=page,
-        settings=settings)
-
-@app.route("/dashboard/<guild_id>/tickets/transcript/<int:ticket_id>")
-@login_required
-@guild_access_required
-def ticket_transcript(guild_id, ticket_id):
-    ticket = run_async(db_fetchone("SELECT * FROM tickets WHERE id=? AND guild_id=?", (ticket_id, guild_id)))
-    if not ticket:
-        return jsonify({"ok": False, "error": "Not found"}), 404
-    messages = run_async(db_fetch("SELECT * FROM ticket_messages WHERE ticket_id=? ORDER BY sent_at ASC", (ticket_id,)))
-    lines = [
-        f"TICKET #{ticket['ticket_num']:04d} — {ticket['subject']}",
-        f"User: {ticket['user_id']} | Status: {ticket['status']}",
-        f"Opened: {ticket['opened_at']} | Closed: {ticket.get('closed_at') or 'N/A'}",
-        "─" * 60, ""
-    ]
-    for m in messages:
-        lines.append(f"[{m['sent_at'][:16]}] {m['author_tag']}: {m['content']}")
-    from flask import Response
-    return Response(
-        "\n".join(lines),
-        mimetype="text/plain",
-        headers={"Content-Disposition": f"attachment; filename=ticket-{ticket['ticket_num']:04d}.txt"}
-    )
-
-# ─────────────────────────────────────────────────────────────
-#  ECONOMY
-# ─────────────────────────────────────────────────────────────
-
-@app.route("/dashboard/<guild_id>/economy")
-@login_required
-@guild_access_required
-def economy(guild_id):
-    leaderboard = run_async(db_fetch(
-        "SELECT user_id, balance, bank, total_earned FROM economy WHERE guild_id=? ORDER BY balance+bank DESC LIMIT 20",
-        (guild_id,)
-    ))
-    shop = run_async(db_fetch("SELECT * FROM shop_items WHERE guild_id=? ORDER BY price ASC", (guild_id,)))
-    total_coins = (run_async(db_fetchone(
-        "SELECT SUM(balance+bank) as s FROM economy WHERE guild_id=?", (guild_id,)
-    )) or {}).get("s", 0) or 0
-    total_users = (run_async(db_fetchone(
-        "SELECT COUNT(*) as c FROM economy WHERE guild_id=?", (guild_id,)
-    )) or {}).get("c", 0)
-    tx_today = (run_async(db_fetchone(
-        "SELECT COUNT(*) as c FROM transactions WHERE guild_id=? AND DATE(created_at)=DATE('now')", (guild_id,)
-    )) or {}).get("c", 0)
-    return render_template("economy.html",
-        guild=_guild(guild_id), guild_id=guild_id, user=session["user"],
-        leaderboard=leaderboard, shop=shop,
-        total_coins=total_coins, total_users=total_users, tx_today=tx_today)
-
-@app.route("/dashboard/<guild_id>/economy/shop/add", methods=["POST"])
-@login_required
-@guild_access_required
-def economy_shop_add(guild_id):
-    d = request.get_json() or {}
-    try:
-        price = int(d.get("price", 0))
-        stock = int(d.get("stock", -1))
-        if price < 1: raise ValueError
-    except ValueError:
-        return jsonify({"ok": False, "error": "Invalid price/stock"}), 400
-    run_async(db_execute(
-        "INSERT INTO shop_items (guild_id,name,description,price,stock,emoji) VALUES (?,?,?,?,?,?)",
-        (guild_id, d.get("name","Item"), d.get("description",""), price, stock, d.get("emoji","🛍️"))
-    ))
-    return jsonify({"ok": True})
-
-@app.route("/dashboard/<guild_id>/economy/shop/delete/<int:item_id>", methods=["POST"])
-@login_required
-@guild_access_required
-def economy_shop_delete(guild_id, item_id):
-    run_async(db_execute("DELETE FROM shop_items WHERE id=? AND guild_id=?", (item_id, guild_id)))
-    return jsonify({"ok": True})
-
-@app.route("/dashboard/<guild_id>/economy/give", methods=["POST"])
-@login_required
-@guild_access_required
-def economy_give(guild_id):
-    d = request.get_json() or {}
-    try:
-        uid    = int(d.get("user_id"))
-        amount = int(d.get("amount", 0))
-        if amount < 1: raise ValueError
-    except (ValueError, TypeError):
-        return jsonify({"ok": False, "error": "Invalid data"}), 400
-    run_async(db_execute("INSERT OR IGNORE INTO economy (guild_id,user_id) VALUES (?,?)", (guild_id, uid)))
-    run_async(db_execute(
-        "UPDATE economy SET balance=balance+?, total_earned=total_earned+? WHERE guild_id=? AND user_id=?",
-        (amount, amount, guild_id, uid)
-    ))
-    run_async(db_execute(
-        "INSERT INTO transactions (guild_id,user_id,amount,type,note) VALUES (?,?,?,?,?)",
-        (guild_id, uid, amount, "admin", f"Dashboard grant by {session['user']['username']}")
-    ))
-    return jsonify({"ok": True})
-
-# ─────────────────────────────────────────────────────────────
-#  LEVELING
-# ─────────────────────────────────────────────────────────────
-
-@app.route("/dashboard/<guild_id>/leveling")
-@login_required
-@guild_access_required
-def leveling(guild_id):
-    leaderboard = run_async(db_fetch(
-        "SELECT user_id, xp, level, messages FROM levels WHERE guild_id=? ORDER BY level DESC, xp DESC LIMIT 20",
-        (guild_id,)
-    ))
-    settings = run_async(db_fetchone("SELECT * FROM level_settings WHERE guild_id=?", (guild_id,))) or {}
-    level_roles = run_async(db_fetch("SELECT * FROM level_roles WHERE guild_id=? ORDER BY level ASC", (guild_id,)))
-    total_users = (run_async(db_fetchone("SELECT COUNT(*) as c FROM levels WHERE guild_id=?", (guild_id,))) or {}).get("c", 0)
-    top_level   = (run_async(db_fetchone("SELECT MAX(level) as m FROM levels WHERE guild_id=?", (guild_id,))) or {}).get("m", 0) or 0
-    return render_template("leveling.html",
-        guild=_guild(guild_id), guild_id=guild_id, user=session["user"],
-        leaderboard=leaderboard, settings=settings, level_roles=level_roles,
-        total_users=total_users, top_level=top_level)
-
-@app.route("/dashboard/<guild_id>/leveling/settings", methods=["POST"])
-@login_required
-@guild_access_required
-def leveling_settings_save(guild_id):
-    d = request.get_json() or {}
-    ALLOWED = {"enabled","xp_min","xp_max","xp_cooldown","level_up_channel","level_up_msg"}
-    for key, val in d.items():
-        if key in ALLOWED:
-            run_async(db_execute(
-                f"INSERT OR IGNORE INTO level_settings (guild_id) VALUES (?)", (guild_id,)
-            ))
-            run_async(db_execute(
-                f"UPDATE level_settings SET {key}=? WHERE guild_id=?", (val if val != "" else None, guild_id)
-            ))
-    return jsonify({"ok": True})
-
-@app.route("/dashboard/<guild_id>/leveling/roles/add", methods=["POST"])
-@login_required
-@guild_access_required
-def leveling_role_add(guild_id):
-    d = request.get_json() or {}
-    try:
-        level   = int(d.get("level"))
-        role_id = int(d.get("role_id"))
-    except (ValueError, TypeError):
-        return jsonify({"ok": False, "error": "Invalid data"}), 400
-    run_async(db_execute(
-        "INSERT OR REPLACE INTO level_roles (guild_id,level,role_id) VALUES (?,?,?)",
-        (guild_id, level, role_id)
-    ))
-    return jsonify({"ok": True})
-
-@app.route("/dashboard/<guild_id>/leveling/roles/delete/<int:level>", methods=["POST"])
-@login_required
-@guild_access_required
-def leveling_role_delete(guild_id, level):
-    run_async(db_execute("DELETE FROM level_roles WHERE guild_id=? AND level=?", (guild_id, level)))
-    return jsonify({"ok": True})
-
-# ─────────────────────────────────────────────────────────────
-#  AUTO-MOD
 # ─────────────────────────────────────────────────────────────
 
 @app.route("/dashboard/<guild_id>/automod")
@@ -971,82 +774,6 @@ def temproom_kick(guild_id, channel_id, user_id):
     return jsonify({"ok": True, "note": "Room record removed. Bot will auto-clean the VC."})
 
 # ─────────────────────────────────────────────────────────────
-#  SUGGESTIONS
-# ─────────────────────────────────────────────────────────────
-
-@app.route("/dashboard/<guild_id>/suggestions")
-@login_required
-@guild_access_required
-def suggestions(guild_id):
-    status   = request.args.get("status", "")
-    settings = run_async(db_fetchone("SELECT * FROM suggestion_settings WHERE guild_id=?", (guild_id,))) or {}
-    if status:
-        rows = run_async(db_fetch(
-            "SELECT * FROM suggestions WHERE guild_id=? AND status=? ORDER BY created_at DESC LIMIT 50",
-            (guild_id, status)))
-    else:
-        rows = run_async(db_fetch(
-            "SELECT * FROM suggestions WHERE guild_id=? ORDER BY created_at DESC LIMIT 50", (guild_id,)))
-    counts = {
-        s: (run_async(db_fetchone("SELECT COUNT(*) as c FROM suggestions WHERE guild_id=? AND status=?",
-            (guild_id, s))) or {}).get("c", 0)
-        for s in ("pending", "approved", "denied")
-    }
-    return render_template("suggestions.html",
-        guild=_guild(guild_id), guild_id=guild_id, user=session["user"],
-        suggestions=rows, settings=settings, counts=counts, status=status)
-
-@app.route("/dashboard/<guild_id>/suggestions/settings", methods=["POST"])
-@login_required
-@guild_access_required
-def suggestions_save(guild_id):
-    d = request.get_json() or {}
-    ALLOWED = {"channel_id", "dm_on_decision"}
-    run_async(db_execute("INSERT OR IGNORE INTO suggestion_settings (guild_id) VALUES (?)", (guild_id,)))
-    for key, val in d.items():
-        if key in ALLOWED:
-            run_async(db_execute(f"UPDATE suggestion_settings SET {key}=? WHERE guild_id=?",
-                (None if val == "" else val, guild_id)))
-    return jsonify({"ok": True})
-
-@app.route("/dashboard/<guild_id>/suggestions/decide/<int:sug_id>", methods=["POST"])
-@login_required
-@guild_access_required
-def suggestion_decide(guild_id, sug_id):
-    d      = request.get_json() or {}
-    status = d.get("status")
-    note   = d.get("note", "")
-    if status not in ("approved", "denied"):
-        return jsonify({"ok": False, "error": "Invalid status"}), 400
-    sug = run_async(db_fetchone("SELECT * FROM suggestions WHERE id=? AND guild_id=?", (sug_id, guild_id)))
-    if not sug: return jsonify({"ok": False, "error": "Not found"}), 404
-    run_async(db_execute(
-        "UPDATE suggestions SET status=?, mod_note=?, mod_id=? WHERE id=?",
-        (status, note, session["user"]["id"], sug_id)
-    ))
-    return jsonify({"ok": True})
-
-
-# ─────────────────────────────────────────────────────────────
-#  ECONOMY SETTINGS
-# ─────────────────────────────────────────────────────────────
-
-@app.route("/dashboard/<guild_id>/economy/settings", methods=["POST"])
-@login_required
-@guild_access_required
-def economy_settings_save(guild_id):
-    d = request.get_json() or {}
-    # Economy settings stored in guild_settings as JSON blob for now
-    # (no separate table needed — config is per-guild extra JSON)
-    ALLOWED = {"daily_min","daily_max","work_min","work_max","currency_name","rob_enabled","slots_enabled"}
-    run_async(db_execute("INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)", (guild_id,)))
-    # Store as individual columns would require migration; use extra JSON column approach
-    # Actually update each setting we support in guild_settings if it exists, or use key-value
-    # For simplicity: store in the existing guild_settings table via SET (they don't exist yet - noted as enhancement)
-    return jsonify({"ok": True, "note": "Economy config saved (requires bot restart to apply)"})
-
-# ─────────────────────────────────────────────────────────────
-#  EXPORT (CSV downloads)
 # ─────────────────────────────────────────────────────────────
 
 @app.route("/dashboard/<guild_id>/export/warnings")
@@ -1064,42 +791,6 @@ def export_warnings(guild_id):
     w.writerows(rows)
     return Response(buf.getvalue(), mimetype="text/csv",
                     headers={"Content-Disposition": f"attachment; filename=warnings_{guild_id}.csv"})
-
-@app.route("/dashboard/<guild_id>/export/economy")
-@login_required
-@guild_access_required
-def export_economy(guild_id):
-    import csv, io
-    from flask import Response
-    rows = run_async(db_fetch(
-        "SELECT user_id,balance,bank,total_earned,last_daily,last_work FROM economy WHERE guild_id=? ORDER BY balance+bank DESC",
-        (guild_id,)))
-    buf = io.StringIO()
-    w   = csv.DictWriter(buf, fieldnames=["user_id","balance","bank","total_earned","last_daily","last_work"])
-    w.writeheader()
-    w.writerows(rows)
-    return Response(buf.getvalue(), mimetype="text/csv",
-                    headers={"Content-Disposition": f"attachment; filename=economy_{guild_id}.csv"})
-
-@app.route("/dashboard/<guild_id>/export/levels")
-@login_required
-@guild_access_required
-def export_levels(guild_id):
-    import csv, io
-    from flask import Response
-    rows = run_async(db_fetch(
-        "SELECT user_id,level,xp,messages FROM levels WHERE guild_id=? ORDER BY level DESC,xp DESC",
-        (guild_id,)))
-    buf = io.StringIO()
-    w   = csv.DictWriter(buf, fieldnames=["user_id","level","xp","messages"])
-    w.writeheader()
-    w.writerows(rows)
-    return Response(buf.getvalue(), mimetype="text/csv",
-                    headers={"Content-Disposition": f"attachment; filename=levels_{guild_id}.csv"})
-
-# ─────────────────────────────────────────────────────────────
-#  USER SEARCH
-# ─────────────────────────────────────────────────────────────
 
 @app.route("/dashboard/<guild_id>/search")
 @login_required
@@ -1130,6 +821,421 @@ def user_search(guild_id):
         guild=_guild(guild_id), guild_id=guild_id, user=session["user"],
         result=result, uid=uid)
 
+
+
+# ─────────────────────────────────────────────────────────────
+#  MUSIC (read-only view — actual playback via bot commands)
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/music")
+@login_required
+@guild_access_required
+def music(guild_id):
+    return render_template("music.html",
+        guild=_guild(guild_id), guild_id=guild_id, user=session["user"])
+
+# ─────────────────────────────────────────────────────────────
+#  SECURITY
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/security")
+@login_required
+@guild_access_required
+def security(guild_id):
+    s = run_async(db_fetchone("SELECT * FROM guild_settings WHERE guild_id=?", (guild_id,))) or {}
+    return render_template("security.html",
+        guild=_guild(guild_id), guild_id=guild_id, user=session["user"], settings=s)
+
+@app.route("/dashboard/<guild_id>/security/save", methods=["POST"])
+@login_required
+@guild_access_required
+def security_save(guild_id):
+    d = request.get_json() or {}
+    ALLOWED = {"anti_raid","raid_threshold","min_account_age","verify_role","unverified_role"}
+    run_async(db_execute("INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)", (guild_id,)))
+    for key, val in d.items():
+        if key in ALLOWED:
+            run_async(db_execute(f"UPDATE guild_settings SET {key}=? WHERE guild_id=?",
+                (None if val == "" else val, guild_id)))
+    return jsonify({"ok": True})
+
+
+# ─────────────────────────────────────────────────────────────
+#  ANALYTICS (stub — redirects to dashboard overview)
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/analytics")
+@login_required
+@guild_access_required
+def analytics(guild_id):
+    guild        = _guild(guild_id)
+    top_cmds     = run_async(db_fetch(
+        """SELECT command, COUNT(*) as total FROM command_stats
+           WHERE guild_id=? GROUP BY command ORDER BY total DESC LIMIT 10""",
+        (int(guild_id),)))
+    daily        = run_async(db_fetch(
+        """SELECT date(used_at) as day, COUNT(*) as total FROM command_stats
+           WHERE guild_id=? AND used_at >= datetime('now','-14 days')
+           GROUP BY date(used_at) ORDER BY day ASC""",
+        (int(guild_id),)))
+    total_cmds   = (run_async(db_fetchone(
+        "SELECT COUNT(*) as c FROM command_stats WHERE guild_id=?", (int(guild_id),))) or {}).get("c", 0)
+    unique_users = (run_async(db_fetchone(
+        "SELECT COUNT(DISTINCT user_id) as c FROM command_stats WHERE guild_id=?", (int(guild_id),))) or {}).get("c", 0)
+    total_warns  = (run_async(db_fetchone(
+        "SELECT COUNT(*) as c FROM warnings WHERE guild_id=?", (int(guild_id),))) or {}).get("c", 0)
+    warn_daily   = run_async(db_fetch(
+        """SELECT date(created_at) as day, COUNT(*) as total FROM warnings
+           WHERE guild_id=? AND created_at >= datetime('now','-14 days')
+           GROUP BY date(created_at) ORDER BY day ASC""",
+        (int(guild_id),)))
+    afk_count    = (run_async(db_fetchone(
+        "SELECT COUNT(*) as c FROM afk_users WHERE guild_id=?", (int(guild_id),))) or {}).get("c", 0)
+    return render_template("analytics.html",
+        guild=guild, guild_id=guild_id, user=session["user"],
+        top_cmds=top_cmds, daily=daily,
+        total_cmds=total_cmds, unique_users=unique_users,
+        total_warns=total_warns, warn_daily=warn_daily,
+        afk_count=afk_count)
+
+
+# ─────────────────────────────────────────────────────────────
+#  LOGGING CONFIG
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/logging")
+@login_required
+@guild_access_required
+def logging_config(guild_id):
+    s = run_async(db_fetchone("SELECT * FROM guild_settings WHERE guild_id=?", (guild_id,))) or {}
+    return render_template("logging.html",
+        guild=_guild(guild_id), guild_id=guild_id, user=session["user"], settings=s)
+
+@app.route("/dashboard/<guild_id>/logging/save", methods=["POST"])
+@login_required
+@guild_access_required
+def logging_save(guild_id):
+    d = request.get_json() or {}
+    ALLOWED = {"log_channel","log_msg_delete","log_msg_edit","log_member_join",
+               "log_member_leave","log_member_update","log_voice","log_mod_actions","log_roles"}
+    run_async(db_execute("INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)", (guild_id,)))
+    for key, val in d.items():
+        if key in ALLOWED:
+            run_async(db_execute(f"UPDATE guild_settings SET {key}=? WHERE guild_id=?",
+                (None if val == "" else val, guild_id)))
+    return jsonify({"ok": True})
+
+# ─────────────────────────────────────────────────────────────
+#  CUSTOM COMMANDS
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/custom-commands")
+@login_required
+@guild_access_required
+def custom_commands(guild_id):
+    cmds = run_async(db_fetch(
+        "SELECT * FROM custom_commands WHERE guild_id=? ORDER BY trigger", (guild_id,)))
+    return render_template("custom_commands.html",
+        guild=_guild(guild_id), guild_id=guild_id, user=session["user"], cmds=cmds)
+
+@app.route("/dashboard/<guild_id>/custom-commands/add", methods=["POST"])
+@login_required
+@guild_access_required
+def custom_commands_add(guild_id):
+    d = request.get_json() or {}
+    trigger  = d.get("trigger","").lower().strip()
+    response = d.get("response","").strip()
+    embed    = int(d.get("embed", 0))
+    color    = d.get("embed_color","#5865F2")
+    title    = d.get("embed_title","")
+    if not trigger or not response:
+        return jsonify({"ok": False, "error": "Trigger and response required"}), 400
+    run_async(db_execute(
+        "INSERT OR REPLACE INTO custom_commands "
+        "(guild_id,trigger,response,embed,embed_color,embed_title,created_by) VALUES (?,?,?,?,?,?,?)",
+        (guild_id, trigger, response, embed, color, title, session["user"]["id"])))
+    return jsonify({"ok": True})
+
+@app.route("/dashboard/<guild_id>/custom-commands/delete/<trigger>", methods=["POST"])
+@login_required
+@guild_access_required
+def custom_commands_delete(guild_id, trigger):
+    run_async(db_execute(
+        "DELETE FROM custom_commands WHERE guild_id=? AND trigger=?", (guild_id, trigger)))
+    return jsonify({"ok": True})
+
+# ─────────────────────────────────────────────────────────────
+#  AUTO-ROLES
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/autoroles")
+@login_required
+@guild_access_required
+def autoroles(guild_id):
+    import json as _json
+    s = run_async(db_fetchone("SELECT auto_roles FROM guild_settings WHERE guild_id=?", (guild_id,))) or {}
+    role_ids = _json.loads(s.get("auto_roles") or "[]")
+    return render_template("autoroles.html",
+        guild=_guild(guild_id), guild_id=guild_id, user=session["user"], role_ids=role_ids)
+
+@app.route("/dashboard/<guild_id>/autoroles/save", methods=["POST"])
+@login_required
+@guild_access_required
+def autoroles_save(guild_id):
+    import json as _json
+    d = request.get_json() or {}
+    role_ids = d.get("role_ids", [])
+    run_async(db_execute("INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)", (guild_id,)))
+    run_async(db_execute("UPDATE guild_settings SET auto_roles=? WHERE guild_id=?",
+        (_json.dumps(role_ids), guild_id)))
+    return jsonify({"ok": True})
+
+# ─────────────────────────────────────────────────────────────
+#  MOD NOTES
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/notes")
+@login_required
+@guild_access_required
+def mod_notes(guild_id):
+    uid = request.args.get("uid","").strip()
+    notes = []
+    if uid:
+        try:
+            notes = run_async(db_fetch(
+                "SELECT * FROM mod_notes WHERE guild_id=? AND user_id=? ORDER BY created_at DESC",
+                (guild_id, int(uid))))
+        except Exception:
+            pass
+    return render_template("notes.html",
+        guild=_guild(guild_id), guild_id=guild_id, user=session["user"],
+        notes=notes, uid=uid)
+
+@app.route("/dashboard/<guild_id>/notes/delete/<int:note_id>", methods=["POST"])
+@login_required
+@guild_access_required
+def note_delete(guild_id, note_id):
+    run_async(db_execute(
+        "DELETE FROM mod_notes WHERE id=? AND guild_id=?", (note_id, guild_id)))
+    return jsonify({"ok": True})
+
+# ─────────────────────────────────────────────────────────────
+#  DEVELOPER PANEL (owner only)
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dev")
+@login_required
+def dev_panel():
+    if str(session["user"]["id"]) != str(config.OWNER_ID):
+        from flask import abort
+        abort(403)
+    import time as _time
+    # Gather stats across ALL guilds
+    total_warnings  = (run_async(db_fetchone("SELECT COUNT(*) as c FROM warnings"))  or {}).get("c",0)
+    total_users     = (run_async(db_fetchone("SELECT COUNT(*) as c FROM guild_settings")) or {}).get("c",0)
+    total_commands  = (run_async(db_fetchone("SELECT COUNT(*) as c FROM command_stats")) or {}).get("c",0) or 0
+    total_custom    = (run_async(db_fetchone("SELECT COUNT(*) as c FROM custom_commands")) or {}).get("c",0)
+    total_aliases   = (run_async(db_fetchone("SELECT COUNT(*) as c FROM command_aliases")) or {}).get("c",0)
+    top_commands    = run_async(db_fetch(
+        "SELECT command, COUNT(*) as total FROM command_stats GROUP BY command ORDER BY total DESC LIMIT 10"))
+    recent_audit    = run_async(db_fetch(
+        "SELECT * FROM audit_log ORDER BY created_at DESC LIMIT 20"))
+    guilds_list     = run_async(db_fetch(
+        "SELECT guild_id FROM guild_settings ORDER BY guild_id DESC"))
+    return render_template("dev.html",
+        user=session["user"],
+        total_warnings=total_warnings,
+        total_guilds=total_users,
+        total_commands=total_commands,
+        total_custom=total_custom,
+        total_aliases=total_aliases,
+        top_commands=top_commands,
+        recent_audit=recent_audit,
+        guilds_list=guilds_list,
+    )
+
+@app.route("/dev/api/stats")
+@login_required
+def dev_api_stats():
+    if str(session["user"]["id"]) != str(config.OWNER_ID):
+        from flask import abort
+        abort(403)
+    return jsonify({
+        "guilds":   (run_async(db_fetchone("SELECT COUNT(*) as c FROM guild_settings")) or {}).get("c", 0),
+        "warnings": (run_async(db_fetchone("SELECT COUNT(*) as c FROM warnings"))       or {}).get("c", 0),
+        "commands": (run_async(db_fetchone("SELECT COUNT(*) as c FROM command_stats"))  or {}).get("c", 0) or 0,
+    })
+
+
+@app.route("/api/bot-status")
+@login_required
+def api_bot_status():
+    """
+    Lightweight status endpoint polled by the dashboard every 30 s.
+    Hits the Discord bot API directly — if it responds, the bot is online.
+    Returns latency in ms, guild count, and recent command count.
+    """
+    import time
+    t0   = time.monotonic()
+    info = bot_req("/users/@me")
+    ms   = round((time.monotonic() - t0) * 1000)
+
+    if not info:
+        return jsonify({"online": False, "latency_ms": None, "guilds": 0, "commands_today": 0})
+
+    guilds_raw     = bot_req("/users/@me/guilds?limit=200") or []
+    guild_count    = len(guilds_raw)
+    commands_today = (run_async(db_fetchone(
+        "SELECT COUNT(*) as c FROM command_stats WHERE used_at >= DATE('now')"
+    )) or {}).get("c", 0)
+
+    return jsonify({
+        "online":         True,
+        "latency_ms":     ms,
+        "guilds":         guild_count,
+        "commands_today": commands_today,
+        "bot_tag":        f"{info.get('username', 'Bot')}#{info.get('discriminator', '0')}",
+    })
+
+
+@app.route("/dashboard/<guild_id>/roles/create", methods=["POST"])
+@login_required
+@guild_access_required
+def create_panel(guild_id):
+    import json as _json
+    d = request.get_json() or {}
+    title       = d.get("title", "Role Panel")[:100]
+    description = d.get("description", "Click a button to toggle a role.")[:500]
+    color_hex   = d.get("color", "5865F2").lstrip("#")
+    channel_id  = d.get("channel_id")
+    entries     = d.get("entries", [])   # [{role_id, label, emoji, style}]
+    if not entries or not channel_id:
+        return jsonify({"ok": False, "error": "channel_id and at least one role required"}), 400
+    try:
+        color_int = int(color_hex, 16)
+    except ValueError:
+        color_int = 0x5865F2
+
+    creator_id = int(session["user"]["id"])
+
+    # ── Build the Discord embed + buttons payload ─────────────
+    # Button styles: 1=Primary(blue) 2=Secondary(grey) 3=Success(green) 4=Danger(red)
+    style_map = {1: 1, 2: 2, 3: 3, 4: 4}
+    components = []
+    row_buttons = []
+    for i, entry in enumerate(entries[:25]):
+        btn = {
+            "type": 2,  # BUTTON
+            "style": style_map.get(int(entry.get("style", 1)), 1),
+            "label": (entry.get("label") or "Role")[:80],
+            "custom_id": f"rolepanel_toggle_{entry.get('role_id', 0)}",
+        }
+        if entry.get("emoji"):
+            btn["emoji"] = {"name": entry["emoji"]}
+        row_buttons.append(btn)
+        # Discord allows max 5 buttons per action row
+        if len(row_buttons) == 5 or i == len(entries) - 1:
+            components.append({"type": 1, "components": row_buttons})
+            row_buttons = []
+
+    discord_payload = {
+        "embeds": [{
+            "title": title,
+            "description": description,
+            "color": color_int,
+            "footer": {"text": "Click a button to toggle a role!"},
+        }],
+        "components": components,
+    }
+
+    # ── POST to Discord ───────────────────────────────────────
+    disc_resp = req.post(
+        f"{DISCORD_API}/channels/{channel_id}/messages",
+        headers={"Authorization": f"Bot {config.TOKEN}", "Content-Type": "application/json"},
+        json=discord_payload,
+        timeout=10,
+    )
+    if not disc_resp.ok:
+        err = disc_resp.json().get("message", "Discord API error")
+        return jsonify({"ok": False, "error": f"Could not post to Discord: {err}"}), 400
+
+    message_id = int(disc_resp.json().get("id", 0))
+
+    # ── Save to DB with real message_id ──────────────────────
+    panel_id_row = run_async(db_fetchone(
+        "INSERT INTO role_panels (guild_id,title,description,color,channel_id,message_id,created_by) "
+        "VALUES (?,?,?,?,?,?,?) RETURNING id",
+        (guild_id, title, description, color_int, int(channel_id), message_id, creator_id)
+    ))
+    if not panel_id_row:
+        run_async(db_execute(
+            "INSERT INTO role_panels (guild_id,title,description,color,channel_id,message_id,created_by) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (guild_id, title, description, color_int, int(channel_id), message_id, creator_id)
+        ))
+        panel_id_row = run_async(db_fetchone(
+            "SELECT id FROM role_panels WHERE guild_id=? ORDER BY id DESC LIMIT 1", (guild_id,)
+        ))
+    pid = panel_id_row["id"] if panel_id_row else None
+    if not pid:
+        return jsonify({"ok": False, "error": "Panel posted to Discord but DB save failed."}), 500
+
+    for i, entry in enumerate(entries[:25]):
+        run_async(db_execute(
+            "INSERT INTO role_panel_entries (panel_id,role_id,label,emoji,style,position) VALUES (?,?,?,?,?,?)",
+            (pid, int(entry.get("role_id", 0)), (entry.get("label") or "Role")[:80],
+             entry.get("emoji", "") or None, int(entry.get("style", 1)), i)
+        ))
+
+    return jsonify({"ok": True, "panel_id": pid, "message_id": message_id,
+                    "note": "Panel posted to Discord successfully!"})
+
+
+# ─────────────────────────────────────────────────────────────
+#  WARN THRESHOLDS
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/warn-thresholds")
+@login_required
+@guild_access_required
+def warn_thresholds(guild_id):
+    rows = run_async(db_fetch(
+        "SELECT * FROM warn_thresholds WHERE guild_id=? ORDER BY count ASC", (guild_id,)
+    ))
+    return jsonify(rows)
+
+@app.route("/dashboard/<guild_id>/warn-thresholds/save", methods=["POST"])
+@login_required
+@guild_access_required
+def warn_thresholds_save(guild_id):
+    d       = request.get_json() or {}
+    count   = d.get("count")
+    action  = d.get("action")
+    dur     = d.get("duration")
+    if not count or action not in ("mute", "kick", "ban"):
+        return jsonify({"ok": False, "error": "count and action required"}), 400
+    try:
+        count = int(count)
+        dur   = int(dur) if dur else None
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "Invalid values"}), 400
+    run_async(db_execute(
+        "INSERT OR REPLACE INTO warn_thresholds (guild_id,count,action,duration) VALUES (?,?,?,?)",
+        (guild_id, count, action, dur)
+    ))
+    return jsonify({"ok": True})
+
+@app.route("/dashboard/<guild_id>/warn-thresholds/delete/<int:count>", methods=["POST"])
+@login_required
+@guild_access_required
+def warn_thresholds_delete(guild_id, count):
+    run_async(db_execute(
+        "DELETE FROM warn_thresholds WHERE guild_id=? AND count=?", (guild_id, count)
+    ))
+    return jsonify({"ok": True})
+
+
+
 def _init_db_sync():
     """Initialize all DB tables when the dashboard starts standalone.
     Safe to call even if the bot has already created them."""
@@ -1147,6 +1253,384 @@ def _init_db_sync():
     finally:
         loop.close()
 
+
+
+# ─────────────────────────────────────────────────────────────
+#  DISCORD GUILD STATS API  (server stats widget)
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/api/<guild_id>/discord-stats")
+@login_required
+def api_discord_guild_stats(guild_id):
+    """Live guild info from Discord Bot API: member count, boost tier, etc."""
+    data = bot_req(f"/guilds/{guild_id}?with_counts=true")
+    if not data or "id" not in data:
+        return jsonify({"ok": False, "error": "Could not fetch guild data"})
+    return jsonify({
+        "ok":           True,
+        "member_count": data.get("approximate_member_count", data.get("member_count", 0)),
+        "online_count": data.get("approximate_presence_count", 0),
+        "boost_tier":   data.get("premium_tier", 0),
+        "boost_count":  data.get("premium_subscription_count", 0),
+        "name":         data.get("name", ""),
+        "icon":         f"https://cdn.discordapp.com/icons/{guild_id}/{data['icon']}.png" if data.get("icon") else None,
+        "verification_level": data.get("verification_level", 0),
+        "features":     data.get("features", []),
+    })
+
+
+# ─────────────────────────────────────────────────────────────
+#  IPC — DASHBOARD → BOT COMMANDS
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/api/ipc/command", methods=["POST"])
+@login_required
+def ipc_send_command():
+    """Send a command to the bot and wait for ACK (up to 8s)."""
+    if str(session["user"]["id"]) != str(config.OWNER_ID):
+        return jsonify({"ok": False, "error": "Owner only"}), 403
+
+    d      = request.get_json() or {}
+    action = d.get("action", "")
+    params = d.get("params", {})
+    nowait = d.get("nowait", False)  # fire-and-forget for shutdown
+
+    ALLOWED = {
+        "reload_cogs", "sync_commands", "set_status", "shutdown",
+        "enable_module", "disable_module", "maintenance_mode",
+        "clear_stats", "vacuum_db", "get_module_state",
+        "post_verify", "send_embed", "announce",
+    }
+    if action not in ALLOWED:
+        return jsonify({"ok": False, "error": f"Unknown action: {action}"}), 400
+
+    if not _IPC_AVAILABLE:
+        return jsonify({"ok": False, "error": "IPC files not accessible — check DATA_DIR"}), 503
+
+    cid = dash_send_command(action, params)
+    if not cid:
+        return jsonify({"ok": False, "error": "Failed to write to IPC queue — check file permissions"}), 500
+
+    # Shutdown: fire-and-forget (bot closes before it can ACK)
+    if nowait or action == "shutdown":
+        return jsonify({"ok": True, "queued": True, "cmd_id": cid,
+                        "msg": "Command queued — bot will execute within 2s."})
+
+    # All other actions: block and wait for bot's ACK
+    ack = dash_poll_ack(cid, max_wait=8.0)
+    return jsonify({
+        "ok":     ack.get("ok", False),
+        "cmd_id": cid,
+        "msg":    ack.get("msg", "No response"),
+        "data":   ack.get("data", {}),
+    })
+
+
+@app.route("/api/ipc/module-state")
+@login_required
+def api_module_state():
+    """Read the last-known module state from disk (written by bot)."""
+    state = read_module_state() if _IPC_AVAILABLE else {}
+    return jsonify({"ok": True, "modules": state})
+
+
+# ─────────────────────────────────────────────────────────────
+#  SETTINGS — per-field auto-save (JSON body)
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/settings/save", methods=["POST"])
+@login_required
+@guild_access_required
+def settings_save_field(guild_id):
+    """Single-field auto-save called by debounced inputs."""
+    d = request.get_json() or {}
+    ALLOWED = {
+        "log_channel", "welcome_channel", "welcome_msg", "mute_role",
+        "dj_role", "bot_status", "bot_status_type",
+        "log_msg_delete", "log_msg_edit", "log_member_join", "log_member_leave",
+        "log_member_update", "log_voice", "log_mod_actions", "log_roles",
+    }
+    updates = {k: v for k, v in d.items() if k in ALLOWED}
+    if not updates:
+        return jsonify({"ok": False, "error": "No valid fields"}), 400
+    for field, value in updates.items():
+        run_async(db_execute(
+            f"UPDATE guild_settings SET {field}=? WHERE guild_id=?",
+            (None if value == "" else value, guild_id)
+        ))
+    return jsonify({"ok": True})
+
+
+@app.route("/dashboard/<guild_id>/settings/ticket/save", methods=["POST"])
+@login_required
+@guild_access_required
+def settings_ticket_save(guild_id):
+    d = request.get_json() or {}
+    ALLOWED = {"category_id", "log_channel", "support_role", "max_open"}
+    updates = {k: v for k, v in d.items() if k in ALLOWED}
+    if not updates:
+        return jsonify({"ok": False, "error": "No valid fields"}), 400
+    for field, value in updates.items():
+        run_async(db_execute(
+            f"INSERT INTO ticket_settings (guild_id, {field}) VALUES (?,?) "
+            f"ON CONFLICT(guild_id) DO UPDATE SET {field}=excluded.{field}",
+            (guild_id, None if value == "" else value)
+        ))
+    return jsonify({"ok": True})
+
+
+# ─────────────────────────────────────────────────────────────
+#  ROLE PANEL — reorder entries drag-and-drop
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/roles/reorder", methods=["POST"])
+@login_required
+@guild_access_required
+def reorder_panel_entries(guild_id):
+    """Body: { panel_id: int, order: [entry_id, ...] }"""
+    d = request.get_json() or {}
+    panel_id = d.get("panel_id")
+    order    = d.get("order", [])
+    if not panel_id or not order:
+        return jsonify({"ok": False, "error": "panel_id and order required"}), 400
+    panel = run_async(db_fetchone(
+        "SELECT id FROM role_panels WHERE id=? AND guild_id=?", (panel_id, guild_id)
+    ))
+    if not panel:
+        return jsonify({"ok": False, "error": "Panel not found"}), 404
+    for pos, entry_id in enumerate(order):
+        run_async(db_execute(
+            "UPDATE role_panel_entries SET position=? WHERE id=? AND panel_id=?",
+            (pos, entry_id, panel_id)
+        ))
+    return jsonify({"ok": True})
+
+
+# ─────────────────────────────────────────────────────────────
+#  SOCKETIO — LIVE LOG STREAM
+# ─────────────────────────────────────────────────────────────
+
+_socket_cursors: dict = {}
+
+
+@socketio.on("connect")
+def on_ws_connect():
+    """Send last 80 log lines on connect."""
+    sid = request.sid
+    recent = dash_get_recent_logs(80)
+    _socket_cursors[sid] = _get_log_line_count()
+    if recent:
+        emit("log_batch", {"events": recent})
+
+
+@socketio.on("disconnect")
+def on_ws_disconnect():
+    _socket_cursors.pop(request.sid, None)
+
+
+@socketio.on("subscribe_logs")
+def on_subscribe_logs():
+    sid = request.sid
+    _socket_cursors[sid] = _get_log_line_count()
+    emit("subscribed", {"ok": True})
+
+
+def _get_log_line_count() -> int:
+    try:
+        from utils.ipc import BOT_TO_DASH
+        with open(BOT_TO_DASH, "r", encoding="utf-8") as f:
+            return sum(1 for _ in f)
+    except Exception:
+        return 0
+
+
+def _log_broadcast_thread():
+    """Background thread: poll IPC file and broadcast new events via SocketIO."""
+    last_line = 0
+    while True:
+        time.sleep(1.5)
+        try:
+            events, new_line = dash_read_events(last_line)
+            if events:
+                socketio.emit("log_batch", {"events": events})
+            last_line = new_line
+        except Exception:
+            pass
+
+
+# ─────────────────────────────────────────────────────────────
+#  START
+# ─────────────────────────────────────────────────────────────
+
+
+# ─────────────────────────────────────────────────────────────
+#  AFK DASHBOARD
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/afk")
+@login_required
+@guild_access_required
+def afk_dashboard(guild_id):
+    guild   = _guild(guild_id)
+    records = run_async(db_fetch(
+        "SELECT * FROM afk_users WHERE guild_id=? ORDER BY afk_since DESC",
+        (int(guild_id),)
+    ))
+    return render_template(
+        "afk.html",
+        guild=guild,
+        guild_id=guild_id,
+        user=session["user"],
+        afk_list=records,
+        afk_count=len(records),
+    )
+
+
+@app.route("/dashboard/<guild_id>/afk/remove/<int:user_id>", methods=["POST"])
+@login_required
+@guild_access_required
+def afk_remove(guild_id, user_id):
+    run_async(db_execute(
+        "DELETE FROM afk_users WHERE guild_id=? AND user_id=?",
+        (int(guild_id), user_id)
+    ))
+    flash("AFK entry removed.", "success")
+    return redirect(url_for("afk_dashboard", guild_id=guild_id))
+
+
+# ─────────────────────────────────────────────────────────────
+#  VERIFICATION GATE
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/verification")
+@login_required
+@guild_access_required
+def verification(guild_id):
+    guild    = _guild(guild_id)
+    settings = run_async(db_fetchone(
+        "SELECT * FROM guild_settings WHERE guild_id=?", (int(guild_id),))) or {}
+    return render_template("verification.html",
+        guild=guild, guild_id=guild_id,
+        user=session["user"], settings=settings)
+
+
+@app.route("/dashboard/<guild_id>/verification/save", methods=["POST"])
+@login_required
+@guild_access_required
+def verification_save(guild_id):
+    d = request.get_json() or {}
+    run_async(db_execute(
+        "INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)", (int(guild_id),)))
+    allowed = {"verify_role", "unverified_role", "anti_raid", "raid_threshold", "min_account_age"}
+    for key, val in d.items():
+        if key in allowed:
+            run_async(db_execute(
+                f"UPDATE guild_settings SET {key}=? WHERE guild_id=?",
+                (None if val == "" else val, int(guild_id))))
+    return jsonify({"ok": True})
+
+
+@app.route("/dashboard/<guild_id>/verification/post", methods=["POST"])
+@login_required
+@guild_access_required
+def verification_post(guild_id):
+    d          = request.get_json() or {}
+    channel_id = d.get("channel_id")
+    if not channel_id:
+        return jsonify({"ok": False, "error": "channel_id required"}), 400
+    if _IPC_AVAILABLE:
+        cid = dash_send_command("post_verify", {"guild_id": int(guild_id), "channel_id": int(channel_id)})
+        if cid:
+            ack = dash_poll_ack(cid)
+            return jsonify({"ok": ack.get("ok", False), "error": ack.get("msg") if not ack.get("ok") else None})
+        return jsonify({"ok": False, "error": "Failed to queue command"})
+    return jsonify({"ok": False, "error": "IPC not available"})
+
+
+# ─────────────────────────────────────────────────────────────
+#  CUSTOM EMBED BUILDER
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/dashboard/<guild_id>/embed-builder")
+@login_required
+@guild_access_required
+def embed_builder(guild_id):
+    guild = _guild(guild_id)
+    return render_template("embed_builder.html",
+        guild=guild, guild_id=guild_id, user=session["user"])
+
+
+@app.route("/dashboard/<guild_id>/embed-builder/send", methods=["POST"])
+@login_required
+@guild_access_required
+def embed_builder_send(guild_id):
+    d = request.get_json() or {}
+    channel_id = d.get("channel_id")
+    embed_data  = d.get("embed", {})
+    if not channel_id or not embed_data:
+        return jsonify({"ok": False, "error": "channel_id and embed required"}), 400
+    if _IPC_AVAILABLE:
+        cid = dash_send_command("send_embed", {
+            "guild_id":   int(guild_id),
+            "channel_id": int(channel_id),
+            "embed":      embed_data,
+        })
+        if cid:
+            ack = dash_poll_ack(cid)
+            return jsonify({"ok": ack.get("ok", False), "error": ack.get("msg") if not ack.get("ok") else None})
+        return jsonify({"ok": False, "error": "Failed to queue command"})
+    return jsonify({"ok": False, "error": "IPC not available"})
+
+
+# ─────────────────────────────────────────────────────────────
+#  LIVE STATS API
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/api/<guild_id>/live-stats")
+@login_required
+def api_live_stats(guild_id):
+    try:
+        gid = int(guild_id)
+    except ValueError:
+        return jsonify({"error": "invalid guild_id"}), 400
+
+    total_cmds   = (run_async(db_fetchone("SELECT COUNT(*) as c FROM command_stats WHERE guild_id=?", (gid,))) or {}).get("c", 0)
+    cmds_today   = (run_async(db_fetchone("SELECT COUNT(*) as c FROM command_stats WHERE guild_id=? AND date(used_at)=date('now')", (gid,))) or {}).get("c", 0)
+    total_warns  = (run_async(db_fetchone("SELECT COUNT(*) as c FROM warnings WHERE guild_id=?", (gid,))) or {}).get("c", 0)
+    warns_today  = (run_async(db_fetchone("SELECT COUNT(*) as c FROM warnings WHERE guild_id=? AND date(created_at)=date('now')", (gid,))) or {}).get("c", 0)
+    afk_count    = (run_async(db_fetchone("SELECT COUNT(*) as c FROM afk_users WHERE guild_id=?", (gid,))) or {}).get("c", 0)
+    open_tickets = (run_async(db_fetchone("SELECT COUNT(*) as c FROM tickets WHERE guild_id=? AND status='open'", (gid,))) or {}).get("c", 0)
+    temp_rooms   = (run_async(db_fetchone("SELECT COUNT(*) as c FROM temp_rooms WHERE guild_id=?", (gid,))) or {}).get("c", 0)
+    bl_count     = (run_async(db_fetchone("SELECT COUNT(*) as c FROM blacklist", ())) or {}).get("c", 0)
+    daily = run_async(db_fetch(
+        "SELECT date(used_at) as day, COUNT(*) as total FROM command_stats "
+        "WHERE guild_id=? AND used_at >= datetime('now','-7 days') "
+        "GROUP BY date(used_at) ORDER BY day ASC", (gid,)))
+
+    return jsonify({
+        "ok": True,
+        "total_cmds": total_cmds, "cmds_today": cmds_today,
+        "total_warns": total_warns, "warns_today": warns_today,
+        "afk_count": afk_count, "open_tickets": open_tickets,
+        "temp_rooms": temp_rooms, "bl_count": bl_count,
+        "sparkline": [{"day": r["day"], "total": r["total"]} for r in daily],
+    })
+
+
+# ─────────────────────────────────────────────────────────────
+#  ENTRY POINT
+# ─────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
     _init_db_sync()
-    app.run(host=config.DASHBOARD_HOST, port=config.DASHBOARD_PORT, debug=True)
+    t = threading.Thread(target=_log_broadcast_thread, daemon=True)
+    t.start()
+    print("  📡  IPC log broadcast thread started.")
+    socketio.run(
+        app,
+        host=config.DASHBOARD_HOST,
+        port=config.DASHBOARD_PORT,
+        debug=True,
+        use_reloader=False,
+        allow_unsafe_werkzeug=True,
+    )

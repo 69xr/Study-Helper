@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}AFK Status{% endblock %}
+{% block page_title %}AFK STATUS{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · AFK Status{% endblock %}
+
+{% block content %}
+<div class="ph">
+  <div class="ph-left">
+    <h1>💤 AFK Status</h1>
+    <p class="sub">Members who are currently marked as AFK. They set this with <code>/afk</code> in Discord.</p>
+  </div>
+  <div class="ph-right">
+    <div style="background:var(--layer2);border:1px solid var(--b2);border-radius:var(--r2);padding:10px 18px;text-align:center;">
+      <div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--amber)">{{ afk_count }}</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:2px;text-transform:uppercase;letter-spacing:.5px">AFK Now</div>
+    </div>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ 'success' if cat=='success' else 'error' }}" style="margin-bottom:16px">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>Currently AFK</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--t3)">Auto-clears when user sends a message</div>
+  </div>
+  <div class="card-body" style="padding:0">
+
+    {% if afk_list %}
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Reason</th>
+          <th>Original Nick</th>
+          <th>AFK Since</th>
+          <th>Duration</th>
+          <th style="text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in afk_list %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:32px;height:32px;border-radius:50%;background:var(--layer3);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">💤</div>
+              <div>
+                <div style="font-family:var(--mono);font-size:12px;color:var(--t2)">{{ entry.user_id }}</div>
+                <div style="font-size:10px;color:var(--t3)">Discord User</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span style="
+              background:var(--ad);
+              color:var(--amber);
+              border:1px solid rgba(245,158,11,.2);
+              border-radius:6px;
+              padding:3px 10px;
+              font-size:12px;
+              max-width:200px;
+              display:inline-block;
+              overflow:hidden;
+              text-overflow:ellipsis;
+              white-space:nowrap;
+              vertical-align:middle;
+            " title="{{ entry.reason }}">{{ entry.reason }}</span>
+          </td>
+          <td>
+            {% if entry.original_nick %}
+              <span style="font-family:var(--mono);font-size:12px;color:var(--t2)">{{ entry.original_nick }}</span>
+            {% else %}
+              <span style="color:var(--t3);font-size:12px;font-style:italic">None set</span>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--t2)">
+              {{ entry.afk_since[:16].replace('T',' ') if entry.afk_since else '—' }}
+            </span>
+          </td>
+          <td>
+            <span class="afk-duration" data-since="{{ entry.afk_since }}" style="
+              font-family:var(--mono);font-size:11px;
+              color:var(--x2);
+              background:var(--xd);
+              border-radius:6px;
+              padding:2px 8px;
+            ">—</span>
+          </td>
+          <td style="text-align:right">
+            <form method="POST" action="{{ url_for('afk_remove', guild_id=guild_id, user_id=entry.user_id) }}"
+                  onsubmit="return confirm('Force-remove AFK for user {{ entry.user_id }}?')">
+              <button type="submit" class="btn btn-ghost btn-xs" style="color:var(--red)">✕ Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% else %}
+    <div style="padding:60px 24px;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">✅</div>
+      <div style="font-size:16px;font-weight:600;color:var(--t1);margin-bottom:6px">No AFK members</div>
+      <div style="color:var(--t3);font-size:13px">Everyone is active! Members can use <code>/afk [reason]</code> to go AFK.</div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- How it works card -->
+<div class="card" style="margin-top:16px">
+  <div class="card-head">
+    <div class="card-title">ℹ️ How the AFK System Works</div>
+  </div>
+  <div class="card-body">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+
+      <div style="background:var(--layer2);border:1px solid var(--b1);border-radius:var(--r2);padding:16px">
+        <div style="font-size:20px;margin-bottom:8px">💬</div>
+        <div style="font-weight:600;margin-bottom:4px;font-size:13px">/afk [reason]</div>
+        <div style="color:var(--t3);font-size:12px">Member runs this command. Bot renames them to <code>[AFK] Name</code> and stores their reason.</div>
+      </div>
+
+      <div style="background:var(--layer2);border:1px solid var(--b1);border-radius:var(--r2);padding:16px">
+        <div style="font-size:20px;margin-bottom:8px">🔔</div>
+        <div style="font-weight:600;margin-bottom:4px;font-size:13px">Mention Detection</div>
+        <div style="color:var(--t3);font-size:12px">When someone pings an AFK user, the bot replies with an embed showing the reason and how long they've been away.</div>
+      </div>
+
+      <div style="background:var(--layer2);border:1px solid var(--b1);border-radius:var(--r2);padding:16px">
+        <div style="font-size:20px;margin-bottom:8px">👋</div>
+        <div style="font-weight:600;margin-bottom:4px;font-size:13px">Auto-Return</div>
+        <div style="color:var(--t3);font-size:12px">When the AFK member sends any message, the bot removes their AFK, restores their nickname, and shows a welcome-back embed.</div>
+      </div>
+
+      <div style="background:var(--layer2);border:1px solid var(--b1);border-radius:var(--r2);padding:16px">
+        <div style="font-size:20px;margin-bottom:8px">🛡️</div>
+        <div style="font-weight:600;margin-bottom:4px;font-size:13px">Admin Control</div>
+        <div style="color:var(--t3);font-size:12px">Use the ✕ Remove button above to manually clear any member's AFK status from the dashboard.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// Live duration calculator
+function formatDuration(seconds) {
+  seconds = Math.floor(seconds);
+  if (seconds < 60) return seconds + 's';
+  const m = Math.floor(seconds / 60), s = seconds % 60;
+  if (m < 60) return s ? m + 'm ' + s + 's' : m + 'm';
+  const h = Math.floor(m / 60), rm = m % 60;
+  if (h < 24) return rm ? h + 'h ' + rm + 'm' : h + 'h';
+  const d = Math.floor(h / 24), rh = h % 24;
+  return rh ? d + 'd ' + rh + 'h' : d + 'd';
+}
+
+function updateDurations() {
+  const now = Date.now();
+  document.querySelectorAll('.afk-duration[data-since]').forEach(el => {
+    const since = el.dataset.since; // "2024-03-18 14:30:00"
+    if (!since) return;
+    // Parse as UTC
+    const dt = new Date(since.replace(' ', 'T') + 'Z');
+    const diff = (now - dt.getTime()) / 1000;
+    el.textContent = diff > 0 ? formatDuration(diff) : '0s';
+  });
+}
+
+updateDurations();
+setInterval(updateDurations, 5000);
+</script>
+{% endblock %}

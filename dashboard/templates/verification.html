@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}Verification{% endblock %}
+{% block page_title %}VERIFICATION{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Verification Gate{% endblock %}
+
+{% block content %}
+<style>
+.vf-hero{background:linear-gradient(135deg,var(--layer),rgba(34,211,164,.05));border:1px solid rgba(34,211,164,.15);border-radius:var(--r3);padding:24px;margin-bottom:20px;position:relative;overflow:hidden}
+.vf-hero::after{content:'✅';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:80px;opacity:.05;pointer-events:none}
+.section-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px}
+.badge-green{background:var(--gd);color:var(--green);border:1px solid rgba(34,211,164,.2)}
+.badge-amber{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.badge-red{background:rgba(244,63,94,.1);color:var(--red);border:1px solid rgba(244,63,94,.2)}
+.flow-step{display:flex;align-items:flex-start;gap:14px;padding:14px;background:var(--layer2);border:1px solid var(--b1);border-radius:var(--r2);margin-bottom:8px}
+.flow-num{width:28px;height:28px;border-radius:50%;background:var(--x);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:13px;font-weight:900;color:#fff;flex-shrink:0}
+.flow-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.flow-desc{font-size:11px;color:var(--t3);line-height:1.5}
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--b1)}
+.tog-row:last-child{border-bottom:none}
+.tog-info .tog-label{font-size:13px;font-weight:600}
+.tog-info .tog-desc{font-size:11px;color:var(--t3);margin-top:2px}
+</style>
+
+<div class="ph">
+  <div class="ph-left">
+    <h1>✅ Verification Gate</h1>
+    <p style="color:var(--t2)">Protect your server — require new members to verify before gaining access</p>
+  </div>
+  <div class="ph-right">
+    <span id="save-status" style="font-family:var(--mono);font-size:10px;color:var(--t3)"></span>
+  </div>
+</div>
+
+<!-- Hero explain -->
+<div class="vf-hero">
+  <h2 style="font-size:16px;font-weight:700;margin-bottom:6px">How Verification Works</h2>
+  <p style="font-size:12px;color:var(--t2);margin-bottom:14px">New members get a restricted role and must click a button to prove they're human.</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <span class="section-badge badge-green">✓ Button-based verification</span>
+    <span class="section-badge badge-green">✓ Auto role assignment</span>
+    <span class="section-badge badge-green">✓ Works with Discord's verification level</span>
+    <span class="section-badge badge-amber">⚡ Configure roles below, then post the button</span>
+  </div>
+</div>
+
+<div class="g2" style="margin-bottom:16px">
+
+  <!-- Role configuration -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--green)"></span>Role Configuration</div>
+    </div>
+    <div class="card-body">
+      <div class="form-group">
+        <label class="form-label">Verified Role ID <span style="color:var(--red)">*</span></label>
+        <input class="form-control" id="verify_role" type="text"
+               value="{{ settings.get('verify_role','') or '' }}"
+               placeholder="Role ID — given after verification">
+        <div class="form-hint">Members receive this role when they click Verify.</div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Unverified Role ID <span style="color:var(--t3)">(optional)</span></label>
+        <input class="form-control" id="unverified_role" type="text"
+               value="{{ settings.get('unverified_role','') or '' }}"
+               placeholder="Role ID — assigned on join (restrict channels with this)">
+        <div class="form-hint">Remove channel permissions for this role to create a holding area.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How to set up -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--x)"></span>Setup Guide</div>
+    </div>
+    <div class="card-body" style="padding-top:0">
+      {% for n, title, desc in [
+        (1,'Create roles','Make a "Verified" role with access to all channels, and an "Unverified" role with no channel access.'),
+        (2,'Enter IDs above','Paste the role IDs into the fields on the left, then click Save.'),
+        (3,'Post the button','Choose a channel below and click "Post Verify Button" to send the embed.'),
+        (4,'Test it','Leave and rejoin the server, or manually assign the Unverified role to yourself to test.'),
+      ] %}
+      <div class="flow-step">
+        <div class="flow-num">{{ n }}</div>
+        <div><div class="flow-title">{{ title }}</div><div class="flow-desc">{{ desc }}</div></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Anti-raid config -->
+<div class="card" style="margin-bottom:16px">
+  <div class="card-head">
+    <div class="card-title"><span class="ct-dot" style="background:var(--red)"></span>🛡️ Anti-Raid Settings</div>
+    <span class="section-badge badge-amber">Auto-configures on join</span>
+  </div>
+  <div class="card-body">
+    <div class="g2">
+      <div>
+        <div class="tog-row">
+          <div class="tog-info">
+            <div class="tog-label">Enable Anti-Raid</div>
+            <div class="tog-desc">Auto-lock server when join spike detected</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="anti_raid" {% if settings.get('anti_raid') %}checked{% endif %}>
+            <span class="toggle-track"></span><span class="toggle-thumb"></span>
+          </label>
+        </div>
+        <div class="form-group" style="margin-top:12px">
+          <label class="form-label">Raid Threshold (joins / 60s)</label>
+          <input class="form-control" id="raid_threshold" type="number" min="3" max="50"
+                 value="{{ settings.get('raid_threshold',10) or 10 }}" placeholder="10">
+          <div class="form-hint">Lock server when this many members join within 60 seconds.</div>
+        </div>
+      </div>
+      <div>
+        <div class="form-group">
+          <label class="form-label">Minimum Account Age (days)</label>
+          <input class="form-control" id="min_account_age" type="number" min="0" max="365"
+                 value="{{ settings.get('min_account_age',0) or 0 }}" placeholder="0">
+          <div class="form-hint">Kick new members whose Discord account is younger than this. Set 0 to disable.</div>
+        </div>
+        <div style="background:var(--layer2);border:1px solid var(--b1);border-radius:var(--r);padding:12px;font-size:11px;color:var(--t3)">
+          💡 When raid is triggered, all text channels are locked automatically. Use <code>/unlockserver</code> in Discord to restore access.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Post button -->
+<div class="card">
+  <div class="card-head">
+    <div class="card-title"><span class="ct-dot" style="background:var(--violet)"></span>Post Verification Button</div>
+  </div>
+  <div class="card-body">
+    <p style="font-size:12px;color:var(--t2);margin-bottom:14px">
+      Save your role settings first, then post the verification embed to a channel. Members click the button to receive the Verified role.
+    </p>
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+      <div class="form-group" style="flex:1;margin-bottom:0;min-width:200px">
+        <label class="form-label">Target Channel ID</label>
+        <input class="form-control" id="post-channel" placeholder="Channel ID to post the verify embed in">
+      </div>
+      <button class="btn btn-primary" onclick="postVerifyBtn()" style="flex-shrink:0">📨 Post Verify Button</button>
+    </div>
+    <div id="post-result" style="margin-top:10px;font-size:12px;display:none"></div>
+
+    <!-- Preview -->
+    <div style="margin-top:20px">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Preview — what members will see</div>
+      <div style="background:#36393f;border-radius:8px;padding:16px;max-width:480px;border-left:4px solid #57F287">
+        <div style="font-size:15px;font-weight:700;color:#57F287;margin-bottom:6px">✅ Welcome to {{ guild.get('name','Your Server') }}</div>
+        <div style="font-size:13px;color:#dcddde;margin-bottom:14px">
+          Click the button below to verify you're human and gain access to the server.<br><br>
+          You'll receive the <strong>Verified</strong> role.
+        </div>
+        <div style="background:#57F287;color:#000;padding:8px 18px;border-radius:4px;display:inline-block;font-size:13px;font-weight:700;cursor:default">
+          ✅ Verify — I'm not a bot
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating save -->
+<div style="position:fixed;bottom:20px;right:24px;z-index:100">
+  <button class="btn btn-primary" onclick="saveAll()" style="padding:10px 24px;box-shadow:0 4px 20px rgba(99,102,241,.4)">
+    💾 Save All Settings
+  </button>
+</div>
+
+<script>
+async function saveAll() {
+  const status = document.getElementById('save-status');
+  status.textContent = 'Saving…';
+  status.style.color = 'var(--t3)';
+
+  const payload = {
+    verify_role:      document.getElementById('verify_role').value.trim() || null,
+    unverified_role:  document.getElementById('unverified_role').value.trim() || null,
+    anti_raid:        document.getElementById('anti_raid').checked ? 1 : 0,
+    raid_threshold:   parseInt(document.getElementById('raid_threshold').value) || 10,
+    min_account_age:  parseInt(document.getElementById('min_account_age').value) || 0,
+  };
+
+  try {
+    const r = await fetch('/dashboard/{{ guild_id }}/verification/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).then(r => r.json());
+
+    if (r.ok) {
+      status.textContent = '✓ Saved';
+      status.style.color = 'var(--green)';
+    } else {
+      status.textContent = '✕ Error saving';
+      status.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    status.textContent = '✕ Network error';
+    status.style.color = 'var(--red)';
+  }
+  setTimeout(() => { status.textContent = ''; }, 4000);
+}
+
+async function postVerifyBtn() {
+  const ch = document.getElementById('post-channel').value.trim();
+  const res = document.getElementById('post-result');
+  if (!ch) { res.style.display='block'; res.style.color='var(--red)'; res.textContent='Enter a channel ID first.'; return; }
+
+  res.style.display = 'block';
+  res.style.color = 'var(--t3)';
+  res.textContent = 'Posting…';
+
+  try {
+    const r = await fetch('/dashboard/{{ guild_id }}/verification/post', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ channel_id: ch }),
+    }).then(r=>r.json());
+
+    if (r.ok) {
+      res.style.color = 'var(--green)';
+      res.textContent = '✓ Verification embed posted! Check the channel.';
+    } else {
+      res.style.color = 'var(--amber)';
+      res.textContent = '⚠ ' + (r.error || 'Failed — is the bot online and IPC running?');
+    }
+  } catch(e) {
+    res.style.color = 'var(--red)';
+    res.textContent = '✕ Network error';
+  }
+}
+</script>
+{% endblock %}

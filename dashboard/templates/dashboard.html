@@ -1,194 +1,296 @@
 {% extends "base.html" %}
-{% block title %}Dashboard{% endblock %}
-{% block page_title %}DASHBOARD{% endblock %}
-{% block breadcrumb %}Overview · {{ guild.get('name','') }}{% endblock %}
-{% block head %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-{% endblock %}
+{% block title %}Overview{% endblock %}
+{% block page_title %}OVERVIEW{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Overview{% endblock %}
+{% block head %}<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div>
-    <h1>{{ guild.get('name', 'Server') }}</h1>
-    <div class="sub">Welcome back, {{ user.username }} — here's what's happening.</div>
+<!-- PAGE HEADER -->
+<div class="ph">
+  <div class="ph-left">
+    <h1>{{ guild.get('name','Server') }}</h1>
+    <p>Welcome back, <strong>{{ user.username }}</strong> — here's your server at a glance.</p>
   </div>
-  <div class="page-actions">
-    <a href="{{ url_for('guild_settings', guild_id=guild_id) }}" class="btn btn-primary">⚙ Settings</a>
-  </div>
-</div>
-
-<!-- Stat cards -->
-<div class="stats-row">
-  <div class="stat-card sc-warn">
-    <div class="stat-icon">⚠️</div>
-    <div class="stat-val" id="stat-w">{{ warn_count }}</div>
-    <div class="stat-lbl">Total Warnings</div>
-  </div>
-  <div class="stat-card sc-blue">
-    <div class="stat-icon">🎭</div>
-    <div class="stat-val" id="stat-p">{{ panel_count }}</div>
-    <div class="stat-lbl">Role Panels</div>
-  </div>
-  <div class="stat-card sc-green">
-    <div class="stat-icon">⚡</div>
-    <div class="stat-val" id="stat-c">{{ cmd_count }}</div>
-    <div class="stat-lbl">Commands Run</div>
-  </div>
-  <div class="stat-card sc-red">
-    <div class="stat-icon">⊘</div>
-    <div class="stat-val">{{ bl_count }}</div>
-    <div class="stat-lbl">Blacklisted</div>
+  <div class="ph-right">
+    <button class="btn btn-ghost btn-sm" onclick="refreshAll()">⟳ Refresh</button>
+    <a href="{{ url_for('guild_settings',guild_id=guild_id) }}" class="btn btn-primary btn-sm">⚙ Settings</a>
   </div>
 </div>
 
-<!-- 7-day sparkline -->
+<!-- STAT CARDS -->
+<div class="sc-row">
+  <div class="sc sc-x">
+    <div class="sc-top"><span class="sc-icon">⚠️</span><span class="sc-badge sc-badge-red">ACTIVE</span></div>
+    <div class="sc-val" id="stat-w">{{ warn_count }}</div>
+    <div class="sc-lbl">Warnings</div>
+    <div class="sc-sub">This server</div>
+  </div>
+  <div class="sc sc-green">
+    <div class="sc-top"><span class="sc-icon">⚡</span><span class="sc-badge sc-badge-green">LIVE</span></div>
+    <div class="sc-val" id="stat-c">{{ cmd_count }}</div>
+    <div class="sc-lbl">Commands Run</div>
+    <div class="sc-sub">All time</div>
+  </div>
+  <div class="sc sc-violet">
+    <div class="sc-top"><span class="sc-icon">🎭</span><span class="sc-badge sc-badge-x">SET</span></div>
+    <div class="sc-val" id="stat-p">{{ panel_count }}</div>
+    <div class="sc-lbl">Role Panels</div>
+    <div class="sc-sub">Active panels</div>
+  </div>
+  <div class="sc sc-red">
+    <div class="sc-top"><span class="sc-icon">⊘</span><span class="sc-badge sc-badge-red">LIST</span></div>
+    <div class="sc-val" id="stat-bl">{{ bl_count }}</div>
+    <div class="sc-lbl">Blacklisted</div>
+    <div class="sc-sub">Banned users</div>
+  </div>
+  <div class="sc sc-blue">
+    <div class="sc-top"><span class="sc-icon">👥</span><span class="sc-badge sc-badge-x">LIVE</span></div>
+    <div class="sc-val" id="ss-members">—</div>
+    <div class="sc-lbl">Members</div>
+    <div class="sc-sub" id="ss-online-sub">— online</div>
+  </div>
+  <div class="sc sc-amber">
+    <div class="sc-top"><span class="sc-icon">💎</span><span class="sc-badge sc-badge-amber">TIER</span></div>
+    <div class="sc-val" id="ss-tier">—</div>
+    <div class="sc-lbl">Boost Tier</div>
+    <div class="sc-sub" id="ss-boosts">— boosts</div>
+  </div>
+</div>
+
+<!-- BOT STATUS BAR -->
+<div style="background:var(--layer);border:1px solid var(--b1);border-radius:var(--r2);padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:7px">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px">Bot Status</span>
+      <span class="badge bgreen" id="bot-status-badge">● Online</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px">Latency</span>
+      <span class="badge bmuted" id="latency-badge">—ms</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px">Verification</span>
+      <span class="badge bamber" id="ss-verify">—</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px">AutoMod</span>
+      <span class="badge" id="automod-status-badge">—</span>
+    </div>
+  </div>
+  <span id="stats-refresh-ts" style="font-family:var(--mono);font-size:9px;color:var(--t3)">Fetching…</span>
+</div>
+
+<!-- COMMAND CHART -->
 {% if sparkline %}
-<div class="card" style="margin-bottom:20px;">
+<div class="card" style="margin-bottom:14px">
   <div class="card-head">
-    <div class="card-title">7-Day Command Activity</div>
-    <a href="{{ url_for('analytics', guild_id=guild_id) }}" class="btn btn-ghost btn-xs">Full Analytics →</a>
+    <div class="card-title"><span class="ct-dot" style="background:var(--x)"></span>7-Day Command Activity</div>
+    <span class="badge bx">LIVE CHART</span>
   </div>
-  <canvas id="sparkChart" height="60"></canvas>
+  <div class="card-body" style="padding-top:8px">
+    <canvas id="sparkChart" height="55"></canvas>
+  </div>
 </div>
 {% endif %}
 
-<div class="grid-2" style="gap:20px;">
-  <!-- Recent warnings -->
+<!-- MAIN GRID -->
+<div class="g2">
+  <!-- Recent Warnings -->
   <div class="card">
     <div class="card-head">
-      <div class="card-title">Recent Warnings</div>
-      <a href="{{ url_for('moderation', guild_id=guild_id) }}" class="btn btn-ghost btn-xs">View all →</a>
+      <div class="card-title"><span class="ct-dot" style="background:var(--red)"></span>Recent Warnings</div>
+      <a href="{{ url_for('moderation',guild_id=guild_id) }}" class="btn btn-ghost btn-xs">View all →</a>
     </div>
     {% if recent_warns %}
-    <div class="table-wrap">
+    <div class="tbl-wrap">
       <table>
         <thead><tr><th>#</th><th>User</th><th>Reason</th><th>Date</th></tr></thead>
         <tbody>
         {% for w in recent_warns %}
         <tr>
           <td><span class="id-tag">{{ w.id }}</span></td>
-          <td><span class="mono text2">{{ w.user_id }}</span></td>
-          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);">{{ w.reason }}</td>
-          <td><span class="mono" style="font-size:11px;color:var(--muted);">{{ w.created_at[:10] }}</span></td>
+          <td><span class="mtag">{{ w.user_id }}</span></td>
+          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t1)">{{ w.reason }}</td>
+          <td><span class="mtag">{{ w.created_at[:10] }}</span></td>
         </tr>
         {% endfor %}
         </tbody>
       </table>
     </div>
     {% else %}
-    <div class="empty-state" style="padding:32px;">
-      <div class="empty-icon">✓</div>
-      <div class="empty-sub">No warnings issued yet.</div>
-    </div>
+    <div class="empty"><div class="empty-ico">✓</div><div class="empty-title">Clean Record</div><div class="empty-sub">No warnings issued yet.</div></div>
     {% endif %}
   </div>
 
-  <!-- Top commands -->
+  <!-- Top Commands -->
   <div class="card">
     <div class="card-head">
-      <div class="card-title">Top Commands</div>
-      <a href="{{ url_for('analytics', guild_id=guild_id) }}" class="btn btn-ghost btn-xs">Full →</a>
+      <div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>Top Commands</div>
+      <a href="{{ url_for('analytics',guild_id=guild_id) }}" class="btn btn-ghost btn-xs">Analytics →</a>
     </div>
     {% if top_cmds %}
-    {% set max_u = top_cmds[0].uses %}
+    {% set mx = top_cmds[0].uses %}
     {% for c in top_cmds %}
-    <div style="margin-bottom:14px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
-        <span class="mono" style="font-size:12px;">/{{ c.command }}</span>
-        <span class="mono" style="font-size:11px;color:var(--muted);">{{ c.uses }}</span>
-      </div>
-      <div style="height:4px;background:var(--surface3);border-radius:4px;overflow:hidden;">
-        <div style="height:100%;width:{{ (c.uses/max_u*100)|int }}%;background:linear-gradient(90deg,var(--accent),var(--accent-g));border-radius:4px;transition:width 1s ease;"></div>
-      </div>
+    <div class="cmd-row">
+      <span class="cmd-rank {% if loop.index==1 %}gold{% elif loop.index==2 %}silver{% elif loop.index==3 %}bronze{% endif %}">{{ loop.index }}</span>
+      <span class="cmd-name">/{{ c.command }}</span>
+      <div style="flex:1"><div class="pbar-wrap"><div class="pbar-fill" style="width:{{ (c.uses/mx*100)|int }}%"></div></div></div>
+      <span class="mtag" style="font-size:10px;width:40px;text-align:right">{{ c.uses }}</span>
     </div>
     {% endfor %}
     {% else %}
-    <div class="empty-state" style="padding:32px;">
-      <div class="empty-icon">⚡</div>
-      <div class="empty-sub">No commands run yet.</div>
-    </div>
+    <div class="empty"><div class="empty-ico">⚡</div><div class="empty-title">No Data Yet</div><div class="empty-sub">Commands will appear here once used.</div></div>
     {% endif %}
   </div>
 </div>
 
-<!-- Recent audit + settings status -->
-<div class="grid-2" style="gap:20px;margin-top:20px;">
+<!-- SECOND ROW -->
+<div class="g2" style="margin-top:0">
+  <!-- Audit Events -->
   <div class="card">
     <div class="card-head">
-      <div class="card-title">Recent Audit Events</div>
-      <a href="{{ url_for('audit_log', guild_id=guild_id) }}" class="btn btn-ghost btn-xs">View all →</a>
+      <div class="card-title"><span class="ct-dot" style="background:var(--blue)"></span>Recent Audit Events</div>
+      <a href="{{ url_for('audit_log',guild_id=guild_id) }}" class="btn btn-ghost btn-xs">View all →</a>
     </div>
+    {% set ac = {'KICK':'bamber','BAN':'bred','WARN':'bamber','ANNOUNCE':'bx','UNBAN':'bgreen','MUTE':'bamber','TIMEOUT':'bamber','CLEAR':'bblue','SLOWMODE':'bmuted'} %}
     {% if recent_audit %}
-    {% set action_colors = {'KICK':'badge-yellow','BAN':'badge-red','WARN':'badge-yellow','ANNOUNCE':'badge-blue','UNBAN':'badge-green'} %}
     {% for r in recent_audit %}
-    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(26,45,69,.4);{% if loop.last %}border-bottom:none;{% endif %}">
-      <span class="badge {{ action_colors.get(r.action, 'badge-muted') }}">{{ r.action }}</span>
-      <span class="mono text2" style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.reason or 'No reason' }}</span>
-      <span class="mono" style="font-size:10px;color:var(--muted);white-space:nowrap;">{{ r.created_at[5:16] }}</span>
+    <div class="audit-row">
+      <span class="audit-ts">{{ r.created_at[5:16] }}</span>
+      <span class="badge {{ ac.get(r.action,'bmuted') }}">{{ r.action }}</span>
+      <span class="audit-detail" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.reason or 'No reason' }}</span>
     </div>
     {% endfor %}
     {% else %}
-    <div class="empty-state" style="padding:32px;"><div class="empty-sub">No audit events yet.</div></div>
+    <div class="empty" style="padding:28px"><div class="empty-ico">🗒</div><div class="empty-sub">No audit events yet.</div></div>
     {% endif %}
   </div>
 
+  <!-- Config Health -->
   <div class="card">
     <div class="card-head">
-      <div class="card-title">Configuration Status</div>
-      <a href="{{ url_for('guild_settings', guild_id=guild_id) }}" class="btn btn-ghost btn-xs">Edit →</a>
+      <div class="card-title"><span class="ct-dot" style="background:var(--green)"></span>Config Health</div>
+      <a href="{{ url_for('guild_settings',guild_id=guild_id) }}" class="btn btn-ghost btn-xs">Edit →</a>
     </div>
-    {% set checks = [
-      ('Log Channel',     settings.get('log_channel')),
-      ('Welcome Channel', settings.get('welcome_channel')),
-      ('Welcome Message', settings.get('welcome_msg')),
-      ('Mute Role',       settings.get('mute_role')),
-    ] %}
-    {% for label, val in checks %}
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(26,45,69,.4);{% if loop.last %}border-bottom:none;{% endif %}">
-      <span style="font-size:13px;font-weight:600;">{{ label }}</span>
-      {% if val %}
-      <span class="badge badge-green">✓ Set</span>
-      {% else %}
-      <span class="badge badge-red">✕ Not set</span>
-      {% endif %}
+    <div class="card-body">
+      {% set checks = [
+        ('🪵 Log Channel',     settings.get('log_channel')),
+        ('👋 Welcome Channel', settings.get('welcome_channel')),
+        ('💬 Welcome Message', settings.get('welcome_msg')),
+        ('🔇 Mute Role',       settings.get('mute_role')),
+        ('✅ Verify Role',     settings.get('verify_role')),
+        ('🔊 Temp Room Setup', settings.get('temp_room_channel')),
+      ] %}
+      {% for label, val in checks %}
+      <div class="kv-row">
+        <span class="kv-key">{{ label }}</span>
+        {% if val %}<span class="badge bgreen">✓ Set</span>{% else %}<span class="badge bred">✕ Missing</span>{% endif %}
+      </div>
+      {% endfor %}
+
+      <!-- Overall score -->
+      {% set score = checks | selectattr('1') | list | length %}
+      <div style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px">Health Score</span>
+          <span style="font-family:var(--mono);font-size:9px;color:{% if score >= 5 %}var(--green){% elif score >= 3 %}var(--amber){% else %}var(--red){% endif %}">{{ score }}/{{ checks|length }}</span>
+        </div>
+        <div class="pbar-wrap">
+          <div class="pbar-fill {% if score >= 5 %}pbar-green{% elif score >= 3 %}pbar-amber{% else %}pbar-red{% endif %}" style="width:{{ (score / checks|length * 100)|int }}%"></div>
+        </div>
+      </div>
     </div>
-    {% endfor %}
   </div>
 </div>
+
+<!-- QUICK ACTIONS -->
+<div class="card">
+  <div class="card-head">
+    <div class="card-title"><span class="ct-dot" style="background:var(--violet)"></span>Quick Actions</div>
+  </div>
+  <div class="card-body" style="display:flex;flex-wrap:wrap;gap:8px">
+    <a href="{{ url_for('moderation',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">🛡 View Warnings</a>
+    <a href="{{ url_for('automod',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">🤖 AutoMod Config</a>
+    <a href="{{ url_for('embed_builder',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">🎨 Build Embed</a>
+    <a href="{{ url_for('announcements',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">📢 Announce</a>
+    <a href="{{ url_for('blacklist',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">⊘ Blacklist</a>
+    <a href="{{ url_for('role_panels',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">◎ Role Panels</a>
+    <a href="{{ url_for('audit_log',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">🗒 Full Audit Log</a>
+    <a href="{{ url_for('members',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">👥 Member List</a>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+const GUILD = '{{ guild_id }}';
+const VERIFY_LEVELS = ['None','Low','Medium','High','Highest'];
+
+/* Chart */
 {% if sparkline %}
 const spark = {{ sparkline | tojson }};
-new Chart(document.getElementById('sparkChart').getContext('2d'), {
-  type: 'bar',
-  data: {
-    labels: spark.map(d => d.day.slice(5)),
-    datasets: [{
-      data: spark.map(d => d.uses),
-      backgroundColor: 'rgba(61,139,255,0.25)',
-      borderColor: '#3d8bff',
-      borderWidth: 2, borderRadius: 6,
-    }]
-  },
-  options: {
-    responsive: true, plugins: { legend: { display: false },
-      tooltip: { backgroundColor:'#0b1221', borderColor:'#1a2d45', borderWidth:1, titleColor:'#ddeeff', bodyColor:'#4a6a88' }
-    },
-    scales: {
-      x: { grid: { color:'#1a2d45' }, ticks: { color:'#4a6a88', font:{ family:'Space Mono', size:10 } } },
-      y: { grid: { color:'#1a2d45' }, ticks: { color:'#4a6a88', font:{ family:'Space Mono', size:10 } }, beginAtZero: true }
-    }
+const ctx = document.getElementById('sparkChart').getContext('2d');
+const grad = ctx.createLinearGradient(0,0,0,55);
+grad.addColorStop(0,'rgba(122,112,255,.35)');
+grad.addColorStop(1,'rgba(122,112,255,.02)');
+new Chart(ctx, {
+  type:'bar',
+  data:{ labels:spark.map(d=>d.day.slice(5)), datasets:[{ data:spark.map(d=>d.uses), backgroundColor:grad, borderColor:'#7a70ff', borderWidth:1.5, borderRadius:5, hoverBackgroundColor:'rgba(168,158,255,.5)' }] },
+  options:{ responsive:true, plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#111430', borderColor:'#1e2348', borderWidth:1, titleColor:'#e8eaff', bodyColor:'#7a82b8', titleFont:{family:'JetBrains Mono',size:10}, bodyFont:{family:'JetBrains Mono',size:10} } },
+    scales:{ x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#3d4470',font:{family:'JetBrains Mono',size:9}}}, y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#3d4470',font:{family:'JetBrains Mono',size:9}},beginAtZero:true} }
   }
 });
 {% endif %}
 
-setInterval(async () => {
-  const d = await (await fetch('/api/{{ guild_id }}/stats')).json();
-  document.getElementById('stat-w').textContent = d.warnings;
-  document.getElementById('stat-p').textContent = d.panels;
-  document.getElementById('stat-c').textContent = d.commands;
-}, 30000);
+/* Live stats */
+setInterval(async()=>{
+  const d = await fetch(`/api/${GUILD}/live-stats`).then(r=>r.json()).catch(()=>({}));
+  if(d.total_warns!==undefined) document.getElementById('stat-w').textContent=d.total_warns;
+  if(d.bl_count!==undefined)   document.getElementById('stat-bl').textContent=d.bl_count;
+  if(d.total_cmds!==undefined) document.getElementById('stat-c').textContent=d.total_cmds.toLocaleString();
+},30000);
+
+/* Discord server stats */
+async function fetchServerStats() {
+  try {
+    const d = await fetch(`/api/${GUILD}/discord-stats`).then(r=>r.json());
+    if (!d.ok) { document.getElementById('stats-refresh-ts').textContent = 'Error fetching stats'; return; }
+    document.getElementById('ss-members').textContent = (d.member_count||0).toLocaleString();
+    document.getElementById('ss-online-sub').textContent = (d.online_count||0).toLocaleString() + ' online';
+    document.getElementById('ss-tier').textContent = 'T' + (d.boost_tier||0);
+    document.getElementById('ss-boosts').textContent = (d.boost_count||0) + ' boosts';
+    document.getElementById('ss-verify').textContent = VERIFY_LEVELS[d.verification_level||0]||'Unknown';
+    document.getElementById('stats-refresh-ts').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch(e) {
+    document.getElementById('stats-refresh-ts').textContent = 'Bot offline';
+  }
+}
+
+/* Bot status */
+async function fetchBotStatus() {
+  try {
+    const d = await fetch('/api/bot-status').then(r=>r.json());
+    const badge = document.getElementById('bot-status-badge');
+    const latBadge = document.getElementById('latency-badge');
+    if (d.online) {
+      badge.className='badge bgreen'; badge.textContent='● Online';
+      latBadge.textContent = d.latency_ms + 'ms';
+    } else {
+      badge.className='badge bred'; badge.textContent='● Offline';
+    }
+  } catch(e){}
+}
+
+function refreshAll() {
+  fetchServerStats();
+  fetchBotStatus();
+  toast('Refreshing stats…','info',1500);
+}
+
+fetchServerStats();
+fetchBotStatus();
+setInterval(fetchServerStats, 60000);
+setInterval(fetchBotStatus, 30000);
 </script>
 {% endblock %}

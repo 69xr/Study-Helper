@@ -120,18 +120,22 @@ class Owner(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         cogs_to_reload = (
-                        [
-                "cogs.general.ping","cogs.general.avatar","cogs.general.uptime",
-                "cogs.general.serverinfo","cogs.general.userinfo","cogs.general.snipe","cogs.general.help",
-                "cogs.moderation.kick","cogs.moderation.ban","cogs.moderation.warn",
-                "cogs.moderation.clear","cogs.moderation.mute","cogs.moderation.slowmode",
-                "cogs.economy.balance","cogs.economy.daily","cogs.economy.pay","cogs.economy.shop",
-                "cogs.economy.admin","cogs.economy.bank","cogs.economy.robslots",
-                "cogs.leveling.rank","cogs.leveling.setup","cogs.leveling.admin",
-                "cogs.roles.panels","cogs.settings.config","cogs.settings.aliases",
-                "cogs.tickets.tickets","cogs.automod",
-                "cogs.temprooms.rooms","cogs.temprooms.invite",
-                "cogs.suggestions.suggestions","cogs.owner",
+            [
+                "cogs.general.ping", "cogs.general.avatar", "cogs.general.uptime",
+                "cogs.general.serverinfo", "cogs.general.userinfo", "cogs.general.snipe",
+                "cogs.general.help", "cogs.general.reminders",
+                "cogs.moderation.kick", "cogs.moderation.ban", "cogs.moderation.warn",
+                "cogs.moderation.clear", "cogs.moderation.mute", "cogs.moderation.slowmode",
+                "cogs.moderation.timeout", "cogs.moderation.notes", "cogs.moderation.thresholds",
+                "cogs.roles.panels",
+                "cogs.settings.config", "cogs.settings.aliases",
+                "cogs.automod",
+                "cogs.logging.logger",
+                "cogs.temprooms.rooms", "cogs.temprooms.invite",
+                "cogs.community.custom_commands", "cogs.community.autoroles",
+                "cogs.music.player", "cogs.music.lyrics",
+                "cogs.security.security",
+                "cogs.owner",
             ]
             if cog.lower() == "all"
             else [f"cogs.{cog.lower()}"]

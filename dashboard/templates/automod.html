@@ -1,280 +1,158 @@
 {% extends "base.html" %}
 {% block title %}AutoMod{% endblock %}
-{% block page_title %}AUTO-MOD{% endblock %}
+{% block page_title %}AUTOMOD{% endblock %}
 {% block breadcrumb %}{{ guild.get('name','') }} · Automatic Moderation{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div><h1>AutoMod</h1><p class="sub">Configure automatic spam, link, word, caps, and mention filters.</p></div>
-  <div class="page-actions">
-    <div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);padding:8px 16px;border-radius:10px;">
-      <span style="font-size:13px;font-weight:700;">Master Switch</span>
-      <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
-        <input type="checkbox" id="master-toggle" {% if settings.get('enabled') %}checked{% endif %}
-               onchange="saveSingle('enabled', this.checked ? 1 : 0)"
-               style="opacity:0;width:0;height:0;position:absolute;">
-        <span id="toggle-track" style="position:absolute;inset:0;border-radius:34px;background:{% if settings.get('enabled') %}var(--success){% else %}var(--border2){% endif %};transition:.2s;"></span>
-        <span id="toggle-knob" style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;
-              top:3px;{% if settings.get('enabled') %}left:23px{% else %}left:3px{% endif %};transition:.2s;"></span>
+<div class="ph">
+  <div class="ph-left"><h1>AutoMod</h1><p>Spam, link, word, caps, and mention filters — all configurable.</p></div>
+  <div class="ph-right">
+    <div style="display:flex;align-items:center;gap:10px;background:var(--layer2);border:1px solid var(--b2);padding:8px 16px;border-radius:var(--r2)">
+      <span style="font-size:13px;font-weight:700">Master Switch</span>
+      <label class="tgl">
+        <input type="checkbox" id="master-toggle" {% if settings.get('enabled') %}checked{% endif %} onchange="saveSingle('enabled',this.checked?1:0)">
+        <span class="tgl-track"></span><span class="tgl-thumb"></span>
       </label>
-      <span style="font-size:12px;color:{% if settings.get('enabled') %}var(--success){% else %}var(--muted){% endif %};">
+      <span id="master-lbl" style="font-family:var(--mono);font-size:10px;font-weight:700;color:{% if settings.get('enabled') %}var(--green){% else %}var(--t3){% endif %}">
         {% if settings.get('enabled') %}ACTIVE{% else %}INACTIVE{% endif %}
       </span>
     </div>
   </div>
 </div>
 
-<!-- Stats -->
-<div class="stats-row" style="margin-bottom:24px;">
-  <div class="stat-card sc-red">
-    <div class="stat-icon">⚡</div>
-    <div class="stat-val">{{ total_actions }}</div>
-    <div class="stat-lbl">Total Actions</div>
-  </div>
-  <div class="stat-card sc-warn">
-    <div class="stat-icon">📅</div>
-    <div class="stat-val">{{ today_actions }}</div>
-    <div class="stat-lbl">Actions Today</div>
-  </div>
+<div class="sc-row">
+  <div class="sc sc-red"><div class="sc-top"><span class="sc-icon">⚡</span><span class="sc-badge sc-badge-red">TOTAL</span></div><div class="sc-val">{{ total_actions }}</div><div class="sc-lbl">Total Actions</div></div>
+  <div class="sc sc-amber"><div class="sc-top"><span class="sc-icon">📅</span><span class="sc-badge sc-badge-amber">TODAY</span></div><div class="sc-val">{{ today_actions }}</div><div class="sc-lbl">Actions Today</div></div>
   {% for s in stats[:2] %}
-  <div class="stat-card sc-blue">
-    <div class="stat-icon">🔍</div>
-    <div class="stat-val" style="font-size:18px;">{{ s.rule }}</div>
-    <div class="stat-lbl">{{ s.cnt }} triggers</div>
-  </div>
+  <div class="sc sc-blue"><div class="sc-top"><span class="sc-icon">🔍</span></div><div class="sc-val" style="font-size:16px">{{ s.rule }}</div><div class="sc-lbl">{{ s.cnt }} triggers</div></div>
   {% endfor %}
 </div>
 
-<!-- Rules grid -->
-<div class="grid-2" style="gap:20px;margin-bottom:20px;">
-
-  <!-- Spam -->
+<div class="g2" style="margin-bottom:0">
   <div class="card">
     <div class="card-head">
-      <span class="card-title">🔁 Spam Detection</span>
-      <label class="toggle-btn">
-        <input type="checkbox" {% if settings.get('spam_enabled') %}checked{% endif %}
-               onchange="saveSingle('spam_enabled', this.checked ? 1 : 0)">
-        <span class="tgl"></span>
-      </label>
+      <div class="card-title"><span class="ct-dot" style="background:var(--red)"></span>🔁 Spam Detection</div>
+      <label class="toggle-btn"><input type="checkbox" {% if settings.get('spam_enabled') %}checked{% endif %} onchange="saveSingle('spam_enabled',this.checked?1:0)"><span class="tgl-t"></span></label>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Messages</label>
-        <input class="form-control" type="number" id="spam-threshold"
-               value="{{ settings.get('spam_threshold', 5) }}"
-               onchange="saveSingle('spam_threshold', this.value)">
-        <span class="form-hint">Messages in window to trigger</span>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Window (sec)</label>
-        <input class="form-control" type="number" id="spam-window"
-               value="{{ settings.get('spam_window', 5) }}"
-               onchange="saveSingle('spam_window', this.value)">
-      </div>
-    </div>
-    <div class="form-group" style="margin-bottom:0;">
-      <label class="form-label">Action</label>
-      <select class="form-control" onchange="saveSingle('spam_action', this.value)">
-        {% for a in ['warn','mute','kick','ban'] %}
-        <option value="{{ a }}" {% if settings.get('spam_action','warn') == a %}selected{% endif %}>{{ a.upper() }}</option>
-        {% endfor %}
-      </select>
-    </div>
-  </div>
-
-  <!-- Links -->
-  <div class="card">
-    <div class="card-head">
-      <span class="card-title">🔗 Link Blocking</span>
-      <label class="toggle-btn">
-        <input type="checkbox" {% if settings.get('links_enabled') %}checked{% endif %}
-               onchange="saveSingle('links_enabled', this.checked ? 1 : 0)">
-        <span class="tgl"></span>
-      </label>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Action</label>
-      <select class="form-control" onchange="saveSingle('links_action', this.value)">
-        {% for a in ['delete','warn','mute','kick','ban'] %}
-        <option value="{{ a }}" {% if settings.get('links_action','delete') == a %}selected{% endif %}>{{ a.upper() }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="form-group" style="margin-bottom:0;">
-      <label class="form-label">Whitelisted Domains</label>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;" id="wl-chips">
-        {% for domain in whitelist %}
-        <span class="tag" style="gap:6px;">{{ domain }}<button onclick="removeDomain('{{ domain }}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px;padding:0;line-height:1;">×</button></span>
-        {% endfor %}
-      </div>
-      <div style="display:flex;gap:8px;">
-        <input class="form-control" id="wl-input" placeholder="youtube.com" style="flex:1;">
-        <button class="btn btn-ghost btn-sm" onclick="addDomain()">Add</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Bad Words -->
-  <div class="card">
-    <div class="card-head">
-      <span class="card-title">🤬 Word Filter</span>
-      <label class="toggle-btn">
-        <input type="checkbox" {% if settings.get('words_enabled') %}checked{% endif %}
-               onchange="saveSingle('words_enabled', this.checked ? 1 : 0)">
-        <span class="tgl"></span>
-      </label>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Action</label>
-      <select class="form-control" onchange="saveSingle('words_action', this.value)">
-        {% for a in ['delete','warn','mute','kick','ban'] %}
-        <option value="{{ a }}" {% if settings.get('words_action','delete') == a %}selected{% endif %}>{{ a.upper() }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="form-group" style="margin-bottom:0;">
-      <label class="form-label">Blocked Words ({{ bad_words|length }})</label>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;max-height:80px;overflow-y:auto;" id="bw-chips">
-        {% for w in bad_words %}
-        <span class="tag" style="gap:5px;font-family:var(--mono);font-size:10px;">{{ w }}<button onclick="removeWord('{{ w }}')" style="background:none;border:none;cursor:pointer;color:var(--danger);padding:0;line-height:1;">×</button></span>
-        {% endfor %}
-      </div>
-      <div style="display:flex;gap:8px;">
-        <input class="form-control" id="bw-input" placeholder="word1, word2, word3" style="flex:1;">
-        <button class="btn btn-ghost btn-sm" onclick="addWords()">Add</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Caps + Mentions -->
-  <div style="display:flex;flex-direction:column;gap:20px;">
-    <div class="card">
-      <div class="card-head">
-        <span class="card-title">🔠 Caps Filter</span>
-        <label class="toggle-btn">
-          <input type="checkbox" {% if settings.get('caps_enabled') %}checked{% endif %}
-                 onchange="saveSingle('caps_enabled', this.checked ? 1 : 0)">
-          <span class="tgl"></span>
-        </label>
-      </div>
+    <div class="card-body">
       <div class="form-row">
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">Threshold %</label>
-          <input class="form-control" type="number" value="{{ settings.get('caps_threshold', 70) }}"
-                 onchange="saveSingle('caps_threshold', this.value)">
+        <div class="form-group"><label class="form-label">Messages</label><input class="form-control" type="number" value="{{ settings.get('spam_threshold',5) }}" onchange="saveSingle('spam_threshold',this.value)"><span class="form-hint">Messages in window</span></div>
+        <div class="form-group"><label class="form-label">Window (sec)</label><input class="form-control" type="number" value="{{ settings.get('spam_window',5) }}" onchange="saveSingle('spam_window',this.value)"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Action</label>
+        <select class="form-control" onchange="saveSingle('spam_action',this.value)">
+          {% for a in ['warn','mute','kick','ban'] %}<option value="{{ a }}" {% if settings.get('spam_action','warn')==a %}selected{% endif %}>{{ a.upper() }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--blue)"></span>🔗 Link Blocking</div>
+      <label class="toggle-btn"><input type="checkbox" {% if settings.get('links_enabled') %}checked{% endif %} onchange="saveSingle('links_enabled',this.checked?1:0)"><span class="tgl-t"></span></label>
+    </div>
+    <div class="card-body">
+      <div class="form-group"><label class="form-label">Action</label>
+        <select class="form-control" onchange="saveSingle('links_action',this.value)">
+          {% for a in ['delete','warn','mute','kick','ban'] %}<option value="{{ a }}" {% if settings.get('links_action','delete')==a %}selected{% endif %}>{{ a.upper() }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Whitelisted Domains</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" id="wl-chips">
+          {% for d in whitelist %}<span class="tag">{{ d }}<button onclick="removeDomain('{{ d }}')" style="background:none;border:none;cursor:pointer;color:var(--red);margin-left:4px;font-size:14px;line-height:1;padding:0">×</button></span>{% endfor %}
         </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">Min Chars</label>
-          <input class="form-control" type="number" value="{{ settings.get('caps_min_length', 10) }}"
-                 onchange="saveSingle('caps_min_length', this.value)">
+        <div style="display:flex;gap:8px"><input class="form-control" id="wl-input" placeholder="youtube.com"><button class="btn btn-ghost btn-sm" onclick="addDomain()">Add</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>🤬 Word Filter</div>
+      <label class="toggle-btn"><input type="checkbox" {% if settings.get('words_enabled') %}checked{% endif %} onchange="saveSingle('words_enabled',this.checked?1:0)"><span class="tgl-t"></span></label>
+    </div>
+    <div class="card-body">
+      <div class="form-group"><label class="form-label">Action</label>
+        <select class="form-control" onchange="saveSingle('words_action',this.value)">
+          {% for a in ['delete','warn','mute','kick','ban'] %}<option value="{{ a }}" {% if settings.get('words_action','delete')==a %}selected{% endif %}>{{ a.upper() }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Blocked Words ({{ bad_words|length }})</label>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;max-height:80px;overflow-y:auto" id="bw-chips">
+          {% for w in bad_words %}<span class="tag" style="font-family:var(--mono);font-size:10px">{{ w }}<button onclick="removeWord('{{ w }}')" style="background:none;border:none;cursor:pointer;color:var(--red);padding:0;margin-left:4px;line-height:1">×</button></span>{% endfor %}
+        </div>
+        <div style="display:flex;gap:8px"><input class="form-control" id="bw-input" placeholder="word1, word2"><button class="btn btn-ghost btn-sm" onclick="addWords()">Add</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-head">
+        <div class="card-title"><span class="ct-dot" style="background:var(--violet)"></span>🔠 Caps Filter</div>
+        <label class="toggle-btn"><input type="checkbox" {% if settings.get('caps_enabled') %}checked{% endif %} onchange="saveSingle('caps_enabled',this.checked?1:0)"><span class="tgl-t"></span></label>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Threshold %</label><input class="form-control" type="number" value="{{ settings.get('caps_threshold',70) }}" onchange="saveSingle('caps_threshold',this.value)"></div>
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Min Chars</label><input class="form-control" type="number" value="{{ settings.get('caps_min_length',10) }}" onchange="saveSingle('caps_min_length',this.value)"></div>
         </div>
       </div>
     </div>
-
-    <div class="card">
+    <div class="card" style="margin-bottom:0">
       <div class="card-head">
-        <span class="card-title">📣 Mass Mentions</span>
-        <label class="toggle-btn">
-          <input type="checkbox" {% if settings.get('mention_enabled') %}checked{% endif %}
-                 onchange="saveSingle('mention_enabled', this.checked ? 1 : 0)">
-          <span class="tgl"></span>
-        </label>
+        <div class="card-title"><span class="ct-dot" style="background:var(--rose)"></span>📣 Mass Mentions</div>
+        <label class="toggle-btn"><input type="checkbox" {% if settings.get('mention_enabled') %}checked{% endif %} onchange="saveSingle('mention_enabled',this.checked?1:0)"><span class="tgl-t"></span></label>
       </div>
-      <div class="form-group" style="margin-bottom:0;">
-        <label class="form-label">Mention Threshold</label>
-        <input class="form-control" type="number" value="{{ settings.get('mention_threshold', 5) }}"
-               onchange="saveSingle('mention_threshold', this.value)">
-        <span class="form-hint">Number of mentions in one message to trigger.</span>
+      <div class="card-body">
+        <div class="form-group" style="margin-bottom:0"><label class="form-label">Mention Threshold</label><input class="form-control" type="number" value="{{ settings.get('mention_threshold',5) }}" onchange="saveSingle('mention_threshold',this.value)"><span class="form-hint">Mentions per message to trigger.</span></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- AutoMod Log -->
-<div class="card">
-  <div class="card-head"><span class="card-title">📋 Recent AutoMod Actions</span></div>
+<div class="card" style="margin-top:16px">
+  <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--blue)"></span>Recent AutoMod Actions</div></div>
   {% if log %}
-  <div class="table-wrap">
+  <div class="tbl-wrap">
     <table>
-      <thead><tr><th>Rule</th><th>User ID</th><th>Action</th><th>Detail</th><th>Time</th></tr></thead>
+      <thead><tr><th>Rule</th><th>User</th><th>Action</th><th>Detail</th><th>Time</th></tr></thead>
       <tbody>
-      {% for entry in log %}
-      {% set rule_badge = {'SPAM':'badge-red','LINKS':'badge-blue','WORDS':'badge-yellow','CAPS':'badge-muted','MENTIONS':'badge-red'} %}
+      {% for e in log %}
+      {% set rb={'SPAM':'bred','LINKS':'bblue','WORDS':'bamber','CAPS':'bmuted','MENTIONS':'bred'} %}
       <tr>
-        <td><span class="badge {{ rule_badge.get(entry.rule,'badge-muted') }}">{{ entry.rule }}</span></td>
-        <td><span class="mono" style="font-size:12px;">{{ entry.user_id }}</span></td>
-        <td><span class="badge badge-yellow">{{ entry.action.upper() }}</span></td>
-        <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2);">
-          {{ entry.detail or '—' }}
-        </td>
-        <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted);">{{ entry.created_at[11:16] }}</span></td>
+        <td><span class="badge {{ rb.get(e.rule,'bmuted') }}">{{ e.rule }}</span></td>
+        <td><span class="mtag">{{ e.user_id }}</span></td>
+        <td><span class="badge bamber">{{ e.action.upper() }}</span></td>
+        <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--t2)">{{ e.detail or '—' }}</td>
+        <td><span class="mtag">{{ e.created_at[11:16] }}</span></td>
       </tr>
       {% endfor %}
       </tbody>
     </table>
   </div>
   {% else %}
-  <div class="empty-state">
-    <div class="empty-icon">🤖</div>
-    <div class="empty-title">No AutoMod actions yet</div>
-    <div class="empty-sub">Enable rules above and AutoMod will start logging violations here.</div>
-  </div>
+  <div class="empty"><div class="empty-ico">🤖</div><div class="empty-title">No AutoMod actions yet</div><div class="empty-sub">Enable rules above to start catching violations.</div></div>
   {% endif %}
 </div>
-
-<style>
-.toggle-btn{position:relative;display:inline-block;width:40px;height:22px;cursor:pointer;}
-.toggle-btn input{opacity:0;width:0;height:0;position:absolute;}
-.tgl{position:absolute;inset:0;border-radius:34px;background:var(--border2);transition:.2s;}
-.toggle-btn input:checked~.tgl{background:var(--success);}
-.tgl::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;}
-.toggle-btn input:checked~.tgl::after{left:21px;}
-</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-const GUILD = "{{ guild_id }}";
-let wl = {{ whitelist | tojson }};
-let bw = {{ bad_words | tojson }};
-
-async function saveSingle(key, value) {
-  const r = await apiPost(`/dashboard/${GUILD}/automod/save`, {[key]: value});
-  toast(r.ok ? 'Saved' : (r.error||'Error'), r.ok ? 'ok' : 'err');
-  if (key === 'enabled') {
-    const track = document.getElementById('toggle-track');
-    const knob  = document.getElementById('toggle-knob');
-    if (track) track.style.background = value ? 'var(--success)' : 'var(--border2)';
-    if (knob)  knob.style.left        = value ? '23px' : '3px';
+const GUILD="{{ guild_id }}";
+let wl={{ whitelist|tojson }};let bw={{ bad_words|tojson }};
+async function saveSingle(key,value){
+  const r=await apiPost(`/dashboard/${GUILD}/automod/save`,{[key]:value});
+  toast(r.ok?'Saved':(r.error||'Error'),r.ok?'ok':'err');
+  if(key==='enabled'){
+    const l=document.getElementById('master-lbl');
+    if(l){l.textContent=value?'ACTIVE':'INACTIVE';l.style.color=value?'var(--green)':'var(--t3)';}
   }
 }
-
-async function addDomain() {
-  const d = document.getElementById('wl-input').value.trim().toLowerCase();
-  if (!d) return;
-  wl = [...new Set([...wl, d])];
-  await saveSingle('links_whitelist', JSON.stringify(wl));
-  document.getElementById('wl-input').value = '';
-  location.reload();
-}
-async function removeDomain(d) {
-  wl = wl.filter(x => x !== d);
-  await saveSingle('links_whitelist', JSON.stringify(wl));
-  location.reload();
-}
-
-async function addWords() {
-  const words = document.getElementById('bw-input').value.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
-  bw = [...new Set([...bw, ...words])];
-  await saveSingle('bad_words', JSON.stringify(bw));
-  document.getElementById('bw-input').value = '';
-  location.reload();
-}
-async function removeWord(w) {
-  bw = bw.filter(x => x !== w);
-  await saveSingle('bad_words', JSON.stringify(bw));
-  location.reload();
-}
+async function addDomain(){const d=document.getElementById('wl-input').value.trim().toLowerCase();if(!d)return;wl=[...new Set([...wl,d])];await saveSingle('links_whitelist',JSON.stringify(wl));document.getElementById('wl-input').value='';location.reload();}
+async function removeDomain(d){wl=wl.filter(x=>x!==d);await saveSingle('links_whitelist',JSON.stringify(wl));location.reload();}
+async function addWords(){const words=document.getElementById('bw-input').value.split(',').map(w=>w.trim().toLowerCase()).filter(Boolean);bw=[...new Set([...bw,...words])];await saveSingle('bad_words',JSON.stringify(bw));document.getElementById('bw-input').value='';location.reload();}
+async function removeWord(w){bw=bw.filter(x=>x!==w);await saveSingle('bad_words',JSON.stringify(bw));location.reload();}
 </script>
 {% endblock %}

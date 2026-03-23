@@ -1,4 +1,18 @@
+# ── Discord Bot ──────────────────────────────────
 discord.py>=2.3.0
 aiosqlite>=0.19.0
+
+# ── Dashboard ────────────────────────────────────
 flask>=3.0.0
+flask-socketio>=5.3.6
 requests>=2.31.0
+
+# ── SocketIO async transport (choose one) ────────
+# eventlet>=0.35.2      # production (better performance)
+# gevent>=24.2.1        # alternative production transport
+# Neither needed in dev — Flask-SocketIO uses threading mode by default
+
+# ── Music ────────────────────────────────────────
+yt-dlp>=2024.1.1
+PyNaCl>=1.5.0
+# FFmpeg must be installed separately (not a pip package)

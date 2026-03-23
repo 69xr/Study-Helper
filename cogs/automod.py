@@ -210,7 +210,8 @@ class AutoMod(commands.Cog):
                         await asyncio.sleep(300)
                         try: await member.remove_roles(mute_role, reason="AutoMod: mute expired")
                         except: pass
-                    self.bot.loop.create_task(unmute())
+                    _t = asyncio.create_task(unmute())
+                    _t.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
                 except discord.Forbidden:
                     pass
             else:

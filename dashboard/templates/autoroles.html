@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Auto-Roles{% endblock %}
+{% block page_title %}AUTO-ROLES{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Auto-Roles{% endblock %}
+{% block content %}
+<div class="ph">
+  <div><h1>Auto-Roles</h1><p class="sub">Roles automatically assigned to every member when they join the server.</p></div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-head"><span class="card-title">➕ Add Auto-Role</span></div>
+  <div style="display:flex;gap:12px;align-items:flex-end;">
+    <div class="form-group" style="flex:1;margin-bottom:0;">
+      <label class="form-label">Role ID</label>
+      <input class="form-control" id="ar-role" placeholder="Right-click role in Discord → Copy Role ID">
+    </div>
+    <button class="btn btn-primary" style="flex-shrink:0;" onclick="addRole()">Add Role</button>
+  </div>
+  <p style="font-size:12px;color:var(--t3);margin-top:10px;margin-bottom:0;">
+    Maximum 10 auto-roles. The bot must have a role higher than the role you want to assign.
+  </p>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">Active Auto-Roles ({{ role_ids|length }}/10)</span>
+  </div>
+  {% if role_ids %}
+  <div style="display:flex;flex-direction:column;gap:8px;" id="role-list">
+    {% for rid in role_ids %}
+    <div id="arole-{{ rid }}" style="display:flex;justify-content:space-between;align-items:center;
+                padding:12px 16px;background:var(--layer2);border:1px solid var(--b1);border-radius:9px;">
+      <div>
+        <span class="badge bblue" style="margin-right:8px;">Role</span>
+        <span class="mtag" style="font-size:13px;">{{ rid }}</span>
+      </div>
+      <button class="btn btn-danger btn-xs" onclick="removeRole({{ rid }})">Remove</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">
+    <div class="empty-ico">🎭</div>
+    <div class="empty-title">No auto-roles configured</div>
+    <div class="empty-sub">Add a role ID above. Every new member will automatically receive it when they join.</div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top:20px;">
+  <div class="card-head"><span class="card-title">💡 How to get a Role ID</span></div>
+  <ol style="font-size:13px;color:var(--t2);line-height:2;padding-left:20px;margin:0;">
+    <li>Enable Developer Mode in Discord (Settings → Advanced → Developer Mode)</li>
+    <li>Go to your server → Server Settings → Roles</li>
+    <li>Right-click the role you want → <strong>Copy Role ID</strong></li>
+    <li>Paste the ID in the field above</li>
+  </ol>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const GUILD = "{{ guild_id }}";
+let roleIds = {{ role_ids | tojson }};
+
+async function saveRoles() {
+  const r = await apiPost(`/dashboard/${GUILD}/autoroles/save`, {role_ids: roleIds});
+  toast(r.ok ? 'Saved!' : (r.error||'Error'), r.ok ? 'ok' : 'err');
+}
+
+async function addRole() {
+  const rid = parseInt(document.getElementById('ar-role').value.trim());
+  if (!rid) { toast('Enter a valid role ID', 'err'); return; }
+  if (roleIds.includes(rid)) { toast('Already added', 'err'); return; }
+  if (roleIds.length >= 10) { toast('Maximum 10 roles', 'err'); return; }
+  roleIds.push(rid);
+  await saveRoles();
+  setTimeout(() => location.reload(), 500);
+}
+
+async function removeRole(rid) {
+  roleIds = roleIds.filter(r => r !== rid);
+  await saveRoles();
+  document.getElementById(`arole-${rid}`)?.remove();
+}
+</script>
+{% endblock %}

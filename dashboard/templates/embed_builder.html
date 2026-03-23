@@ -1,0 +1,514 @@
+{% extends "base.html" %}
+{% block title %}Embed Builder{% endblock %}
+{% block page_title %}EMBED BUILDER{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Custom Embed Builder{% endblock %}
+
+{% block content %}
+<style>
+.builder-grid{display:grid;grid-template-columns:1fr 380px;gap:16px;min-height:600px}
+@media(max-width:900px){.builder-grid{grid-template-columns:1fr}}
+.preview-pane{position:sticky;top:20px}
+.discord-preview{background:#36393f;border-radius:8px;padding:16px;font-family:'Whitney',sans-serif}
+.embed-preview{border-left:4px solid #5865F2;background:#2f3136;border-radius:0 4px 4px 0;padding:12px;margin-top:4px}
+.ep-author{font-size:12px;font-weight:600;color:#dcddde;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.ep-author img{width:18px;height:18px;border-radius:50%}
+.ep-title{font-size:15px;font-weight:700;color:#00b0f4;margin-bottom:6px;word-break:break-word}
+.ep-title a{color:#00b0f4}
+.ep-desc{font-size:14px;color:#dcddde;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.ep-fields{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.ep-field{min-width:120px;flex:1}
+.ep-field-inline{flex:0 0 calc(33% - 8px)}
+.ep-field-name{font-size:12px;font-weight:700;color:#dcddde;margin-bottom:2px}
+.ep-field-value{font-size:12px;color:#dcddde}
+.ep-image{width:100%;border-radius:4px;margin-top:8px;max-height:300px;object-fit:cover}
+.ep-thumbnail{float:right;margin-left:12px;width:80px;height:80px;border-radius:4px;object-fit:cover}
+.ep-footer{font-size:11px;color:#72767d;margin-top:10px;display:flex;align-items:center;gap:6px}
+.ep-footer img{width:16px;height:16px;border-radius:50%}
+.ep-ts{margin-left:4px}
+.color-swatch{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:6px}
+.cs{width:22px;height:22px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:transform .1s,border-color .1s}
+.cs:hover{transform:scale(1.2)}
+.cs.active{border-color:#fff}
+.field-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px;padding:10px;background:var(--layer2);border:1px solid var(--b1);border-radius:var(--r)}
+.field-row .form-group{margin-bottom:0}
+.remove-field{background:var(--rd);border:1px solid rgba(244,63,94,.2);color:var(--red);padding:7px 10px;border-radius:var(--r);cursor:pointer;font-size:12px;transition:all .12s;height:36px;display:flex;align-items:center}
+.remove-field:hover{background:var(--red);color:#fff}
+</style>
+
+<div class="ph">
+  <div class="ph-left">
+    <h1>🎨 Embed Builder</h1>
+    <p style="color:var(--t2)">Build and send rich Discord embeds to any channel</p>
+  </div>
+  <div class="ph-right">
+    <button class="btn btn-ghost btn-xs" onclick="resetForm()">↺ Reset</button>
+  </div>
+</div>
+
+<div class="builder-grid">
+
+  <!-- Left: editor -->
+  <div>
+
+    <!-- Send target -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--green)"></span>Send Destination</div></div>
+      <div class="card-body">
+        <div class="g2" style="gap:10px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Channel ID <span style="color:var(--red)">*</span></label>
+            <input class="form-control" id="target-channel" placeholder="Discord channel ID">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Plain text (optional)</label>
+            <input class="form-control" id="plain-content" placeholder="Text above the embed (can ping roles)">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Color -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--x)"></span>Embed Color</div></div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <input type="color" id="embed-color" value="#5865F2"
+                 style="width:44px;height:36px;border:none;background:none;cursor:pointer;border-radius:var(--r)"
+                 oninput="updatePreview()">
+          <input class="form-control" id="embed-color-hex" value="#5865F2" placeholder="#5865F2"
+                 style="width:100px" oninput="syncColorFromHex()">
+          <span style="font-size:11px;color:var(--t3)">or pick a preset:</span>
+        </div>
+        <div class="color-swatch">
+          {% for col in ['#5865F2','#2ecc71','#e74c3c','#f39c12','#3498db','#9b59b6','#1DB954','#00b0f4','#ff73fa','#faa61a','#ffffff','#23272a','#36393f','#2f3136','#99aab5','#ffb800','#ff4444','#00ff7f','#ff6e00','#8957e5'] %}
+          <div class="cs" style="background:{{ col }}" title="{{ col }}" onclick="pickColor('{{ col }}')"></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Author -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--t2)"></span>Author</div></div>
+      <div class="card-body">
+        <div class="g2" style="gap:10px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Author Name</label>
+            <input class="form-control" id="author-name" placeholder="Displayed above the title" oninput="updatePreview()">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Author Icon URL</label>
+            <input class="form-control" id="author-icon" placeholder="https://…" oninput="updatePreview()">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px;margin-bottom:0">
+          <label class="form-label">Author URL (optional)</label>
+          <input class="form-control" id="author-url" placeholder="Makes the author name clickable" oninput="updatePreview()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--x)"></span>Body</div></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input class="form-control" id="embed-title" placeholder="Embed title" oninput="updatePreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Title URL (optional)</label>
+          <input class="form-control" id="title-url" placeholder="Makes the title a hyperlink" oninput="updatePreview()">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" id="embed-desc" rows="4"
+                    placeholder="Main content — supports Discord markdown: **bold**, *italic*, `code`, > quote"
+                    oninput="updatePreview()"></textarea>
+          <div style="display:flex;justify-content:space-between;margin-top:4px">
+            <span class="form-hint">Supports **bold**, *italic*, `code`, [text](url)</span>
+            <span id="desc-count" style="font-family:var(--mono);font-size:9px;color:var(--t3)">0/4096</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fields -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head">
+        <div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>Fields <span id="field-count" style="color:var(--t3)">(0/25)</span></div>
+        <button class="btn btn-ghost btn-xs" onclick="addField()">+ Add Field</button>
+      </div>
+      <div class="card-body" id="fields-container">
+        <div style="text-align:center;color:var(--t3);font-family:var(--mono);font-size:11px;padding:12px 0">
+          No fields yet. Click "+ Add Field" to add one.
+        </div>
+      </div>
+    </div>
+
+    <!-- Images -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--violet)"></span>Images</div></div>
+      <div class="card-body">
+        <div class="g2" style="gap:10px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Image URL (large, below description)</label>
+            <input class="form-control" id="embed-image" placeholder="https://…" oninput="updatePreview()">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Thumbnail URL (small, top-right)</label>
+            <input class="form-control" id="embed-thumbnail" placeholder="https://…" oninput="updatePreview()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--t3)"></span>Footer</div></div>
+      <div class="card-body">
+        <div class="g2" style="gap:10px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Footer Text</label>
+            <input class="form-control" id="footer-text" placeholder="Footer message" oninput="updatePreview()">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Footer Icon URL</label>
+            <input class="form-control" id="footer-icon" placeholder="https://…" oninput="updatePreview()">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px;margin-bottom:0">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="add-timestamp" onchange="updatePreview()"
+                   style="accent-color:var(--x);width:14px;height:14px">
+            <span style="font-size:12px;color:var(--t2)">Add timestamp (current time when sent)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Send button -->
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="copyJson()">📋 Copy JSON</button>
+      <button class="btn btn-primary" onclick="sendEmbed()" style="padding:10px 24px">
+        📨 Send to Discord
+      </button>
+    </div>
+    <div id="send-result" style="margin-top:10px;font-size:12px;text-align:right;display:none"></div>
+  </div>
+
+  <!-- Right: live preview -->
+  <div class="preview-pane">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="ct-dot" style="background:var(--green);animation:pulse-dot 2s infinite"></span>Live Preview</div>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--t3)">Updates as you type</span>
+      </div>
+      <div class="card-body">
+        <div class="discord-preview">
+          <div id="plain-preview" style="font-size:14px;color:#dcddde;margin-bottom:4px;display:none"></div>
+          <div class="embed-preview" id="embed-preview-box" style="border-left-color:#5865F2">
+            <div id="ep-thumbnail-wrap" style="display:none;float:right;margin-left:12px">
+              <img id="ep-thumbnail" src="" alt="" class="ep-thumbnail">
+            </div>
+            <div id="ep-author" class="ep-author" style="display:none">
+              <img id="ep-author-icon" src="" alt="" style="display:none">
+              <span id="ep-author-name"></span>
+            </div>
+            <div id="ep-title" class="ep-title" style="display:none"></div>
+            <div id="ep-desc" class="ep-desc" style="display:none"></div>
+            <div id="ep-fields" class="ep-fields"></div>
+            <div style="clear:both"></div>
+            <img id="ep-image" src="" alt="" class="ep-image" style="display:none">
+            <div id="ep-footer" class="ep-footer" style="display:none">
+              <img id="ep-footer-icon" src="" alt="" style="display:none">
+              <span id="ep-footer-text"></span>
+              <span class="ep-ts" id="ep-ts" style="display:none">• Today at 12:00 PM</span>
+            </div>
+          </div>
+          <div id="preview-empty" style="text-align:center;color:#72767d;font-size:12px;padding:20px 0">
+            Fill in the fields on the left to see a preview
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JSON output -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-head"><div class="card-title"><span class="ct-dot" style="background:var(--mono-x,var(--x))"></span>Raw JSON</div></div>
+      <div class="card-body" style="padding-top:0">
+        <pre id="json-output" style="font-family:var(--mono);font-size:9px;color:var(--t2);background:var(--base);border-radius:var(--r);padding:10px;overflow-x:auto;max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all">{}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let fields = [];
+
+// ─── Color helpers ────────────────────────────────────────
+function pickColor(hex) {
+  document.getElementById('embed-color').value = hex;
+  document.getElementById('embed-color-hex').value = hex;
+  document.querySelectorAll('.cs').forEach(el => el.classList.toggle('active', el.title === hex));
+  updatePreview();
+}
+function syncColorFromHex() {
+  const hex = document.getElementById('embed-color-hex').value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+    document.getElementById('embed-color').value = hex;
+    updatePreview();
+  }
+}
+
+// ─── Fields ──────────────────────────────────────────────
+function addField() {
+  if (fields.length >= 25) return;
+  const id = Date.now();
+  fields.push({ id, name:'', value:'', inline: false });
+  renderFields();
+  updatePreview();
+}
+function removeField(id) {
+  fields = fields.filter(f => f.id !== id);
+  renderFields();
+  updatePreview();
+}
+function renderFields() {
+  const c = document.getElementById('fields-container');
+  document.getElementById('field-count').textContent = `(${fields.length}/25)`;
+  if (!fields.length) {
+    c.innerHTML = '<div style="text-align:center;color:var(--t3);font-family:var(--mono);font-size:11px;padding:12px 0">No fields yet.</div>';
+    return;
+  }
+  c.innerHTML = fields.map(f => `
+    <div class="field-row">
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-control" placeholder="Field name" value="${esc(f.name)}"
+               oninput="fields.find(x=>x.id==${f.id}).name=this.value;updatePreview()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Value</label>
+        <input class="form-control" placeholder="Field value" value="${esc(f.value)}"
+               oninput="fields.find(x=>x.id==${f.id}).value=this.value;updatePreview()">
+      </div>
+      <div>
+        <label class="form-label">Inline</label>
+        <div style="display:flex;align-items:center;gap:8px;height:36px">
+          <label class="toggle" style="flex-shrink:0">
+            <input type="checkbox" ${f.inline?'checked':''} onchange="fields.find(x=>x.id==${f.id}).inline=this.checked;updatePreview()">
+            <span class="toggle-track"></span><span class="toggle-thumb"></span>
+          </label>
+          <button class="remove-field" onclick="removeField(${f.id})">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function esc(s) { return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ─── Build embed object ──────────────────────────────────
+function buildEmbed() {
+  const color = document.getElementById('embed-color').value;
+  const colorInt = parseInt(color.replace('#',''), 16);
+  const e = { color: colorInt };
+
+  const authorName = document.getElementById('author-name').value.trim();
+  if (authorName) {
+    e.author = { name: authorName };
+    const ai = document.getElementById('author-icon').value.trim();
+    const au = document.getElementById('author-url').value.trim();
+    if (ai) e.author.icon_url = ai;
+    if (au) e.author.url = au;
+  }
+
+  const title = document.getElementById('embed-title').value.trim();
+  if (title) {
+    e.title = title;
+    const tu = document.getElementById('title-url').value.trim();
+    if (tu) e.url = tu;
+  }
+
+  const desc = document.getElementById('embed-desc').value;
+  if (desc.trim()) e.description = desc;
+
+  if (fields.length) {
+    e.fields = fields.filter(f => f.name).map(f => ({
+      name: f.name, value: f.value || '\u200b', inline: f.inline
+    }));
+  }
+
+  const img = document.getElementById('embed-image').value.trim();
+  if (img) e.image = { url: img };
+
+  const thumb = document.getElementById('embed-thumbnail').value.trim();
+  if (thumb) e.thumbnail = { url: thumb };
+
+  const ftText = document.getElementById('footer-text').value.trim();
+  const ftIcon = document.getElementById('footer-icon').value.trim();
+  if (ftText || ftIcon) {
+    e.footer = {};
+    if (ftText) e.footer.text = ftText;
+    if (ftIcon) e.footer.icon_url = ftIcon;
+  }
+
+  if (document.getElementById('add-timestamp').checked) {
+    e.timestamp = new Date().toISOString();
+  }
+
+  return e;
+}
+
+// ─── Live preview ─────────────────────────────────────────
+function updatePreview() {
+  const e = buildEmbed();
+  const isEmpty = !e.title && !e.description && !e.author && !fields.length;
+
+  document.getElementById('preview-empty').style.display = isEmpty ? 'block' : 'none';
+  document.getElementById('embed-preview-box').style.display = isEmpty ? 'none' : 'block';
+
+  // Color
+  const colorHex = '#' + (e.color || 0x5865F2).toString(16).padStart(6,'0');
+  document.getElementById('embed-preview-box').style.borderLeftColor = colorHex;
+
+  // Plain text
+  const pt = document.getElementById('plain-content').value;
+  const ptEl = document.getElementById('plain-preview');
+  ptEl.style.display = pt ? 'block' : 'none';
+  ptEl.textContent = pt;
+
+  // Thumbnail
+  const thumbEl = document.getElementById('ep-thumbnail-wrap');
+  const thumbImg = document.getElementById('ep-thumbnail');
+  if (e.thumbnail?.url) { thumbEl.style.display='block'; thumbImg.src=e.thumbnail.url; }
+  else thumbEl.style.display = 'none';
+
+  // Author
+  const authEl = document.getElementById('ep-author');
+  if (e.author?.name) {
+    authEl.style.display = 'flex';
+    document.getElementById('ep-author-name').textContent = e.author.name;
+    const ai = document.getElementById('ep-author-icon');
+    if (e.author.icon_url) { ai.style.display='inline'; ai.src=e.author.icon_url; }
+    else ai.style.display='none';
+  } else authEl.style.display = 'none';
+
+  // Title
+  const titleEl = document.getElementById('ep-title');
+  if (e.title) {
+    titleEl.style.display = 'block';
+    titleEl.innerHTML = e.url
+      ? `<a href="${escHtml(e.url)}" target="_blank">${escHtml(e.title)}</a>`
+      : escHtml(e.title);
+  } else titleEl.style.display = 'none';
+
+  // Description
+  const descEl = document.getElementById('ep-desc');
+  const desc = document.getElementById('embed-desc').value;
+  document.getElementById('desc-count').textContent = desc.length + '/4096';
+  if (desc.trim()) {
+    descEl.style.display = 'block';
+    // Basic markdown hints
+    descEl.textContent = desc;
+  } else descEl.style.display = 'none';
+
+  // Fields
+  const fieldsEl = document.getElementById('ep-fields');
+  if (e.fields?.length) {
+    fieldsEl.style.display = 'flex';
+    fieldsEl.innerHTML = e.fields.map(f =>
+      `<div class="${f.inline ? 'ep-field ep-field-inline' : 'ep-field'}">
+        <div class="ep-field-name">${escHtml(f.name)}</div>
+        <div class="ep-field-value">${escHtml(f.value)}</div>
+       </div>`
+    ).join('');
+  } else fieldsEl.style.display = 'none';
+
+  // Image
+  const imgEl = document.getElementById('ep-image');
+  if (e.image?.url) { imgEl.style.display='block'; imgEl.src=e.image.url; }
+  else imgEl.style.display = 'none';
+
+  // Footer
+  const ftEl = document.getElementById('ep-footer');
+  if (e.footer?.text || e.timestamp) {
+    ftEl.style.display = 'flex';
+    const fi = document.getElementById('ep-footer-icon');
+    if (e.footer?.icon_url) { fi.style.display='inline'; fi.src=e.footer.icon_url; }
+    else fi.style.display = 'none';
+    document.getElementById('ep-footer-text').textContent = e.footer?.text || '';
+    const ts = document.getElementById('ep-ts');
+    if (e.timestamp) { ts.style.display='inline'; ts.textContent = '• ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+    else ts.style.display = 'none';
+  } else ftEl.style.display = 'none';
+
+  // JSON
+  document.getElementById('json-output').textContent = JSON.stringify(e, null, 2);
+}
+
+// ─── Send ────────────────────────────────────────────────
+async function sendEmbed() {
+  const ch = document.getElementById('target-channel').value.trim();
+  const res = document.getElementById('send-result');
+  if (!ch) {
+    res.style.display='block'; res.style.color='var(--red)';
+    res.textContent = '✕ Enter a channel ID first.'; return;
+  }
+
+  const embed = buildEmbed();
+  const plain = document.getElementById('plain-content').value.trim();
+
+  res.style.display='block'; res.style.color='var(--t3)';
+  res.textContent = 'Sending…';
+
+  try {
+    const r = await fetch('/dashboard/{{ guild_id }}/embed-builder/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channel_id: ch, embed, content: plain || null }),
+    }).then(r => r.json());
+
+    if (r.ok) {
+      res.style.color = 'var(--green)';
+      res.textContent = '✓ Embed sent successfully!';
+    } else {
+      res.style.color = 'var(--amber)';
+      res.textContent = '⚠ ' + (r.error || 'Failed — is the bot online?');
+    }
+  } catch(e) {
+    res.style.color = 'var(--red)';
+    res.textContent = '✕ Network error';
+  }
+}
+
+function copyJson() {
+  navigator.clipboard.writeText(document.getElementById('json-output').textContent)
+    .then(() => {
+      const btn = event.target;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = '📋 Copy JSON', 2000);
+    });
+}
+
+function resetForm() {
+  if (!confirm('Reset the embed builder? All fields will be cleared.')) return;
+  fields = [];
+  ['author-name','author-icon','author-url','embed-title','title-url',
+   'embed-desc','embed-image','embed-thumbnail','footer-text','footer-icon',
+   'target-channel','plain-content'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('embed-color').value = '#5865F2';
+  document.getElementById('embed-color-hex').value = '#5865F2';
+  document.getElementById('add-timestamp').checked = false;
+  renderFields();
+  updatePreview();
+}
+
+// Init
+updatePreview();
+</script>
+{% endblock %}

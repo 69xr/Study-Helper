@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Custom Commands{% endblock %}
+{% block page_title %}CUSTOM COMMANDS{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Custom Commands{% endblock %}
+{% block content %}
+<div class="ph">
+  <div><h1>Custom Commands</h1><p class="sub">Create custom text or embed responses triggered by a keyword in chat.</p></div>
+</div>
+
+<div class="g2" style="gap:20px;margin-bottom:20px;align-items:start;">
+  <!-- Creator form -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">➕ Create Command</span></div>
+    <div class="form-group">
+      <label class="form-label">Trigger Word</label>
+      <input class="form-control" id="cc-trigger" placeholder="e.g. rules, info, links" oninput="livePreview()">
+      <span class="form-hint">Single word. Members type this in chat → bot responds.</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Send as Embed?</label>
+      <select class="form-control" id="cc-embed" onchange="toggleEmbed(this.value);livePreview()">
+        <option value="0">💬 Plain text</option>
+        <option value="1">📎 Embed</option>
+      </select>
+    </div>
+    <div id="embed-options" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Embed Title</label>
+        <input class="form-control" id="cc-title" placeholder="Optional embed title" oninput="livePreview()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Embed Color</label>
+        <input class="form-control" type="color" id="cc-color" value="#5865F2" oninput="livePreview()">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Response Text</label>
+      <textarea class="form-control" id="cc-response" rows="5"
+                placeholder="Response content. Supports:&#10;{user} — member mention&#10;{server} — server name&#10;{count} — member count"
+                style="resize:vertical;" oninput="livePreview()"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="createCC()">Create Command</button>
+  </div>
+
+  <!-- Live preview -->
+  <div class="card" style="position:sticky;top:20px;">
+    <div class="card-head"><span class="card-title">👁 Live Preview</span></div>
+    <div style="padding:4px 0 12px;font-size:11px;color:var(--t3);">
+      This is how the bot response will look in Discord.
+    </div>
+    <!-- Discord-style message mockup -->
+    <div style="background:#313338;border-radius:10px;padding:14px 16px;font-family:'Whitney',sans-serif;">
+      <!-- Bot author row -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#5865F2,#8b5cf6);
+                    display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚡</div>
+        <div>
+          <span style="font-weight:700;color:#fff;font-size:14px;">Severus</span>
+          <span style="font-size:10px;color:#5865F2;margin-left:6px;background:rgba(88,101,242,.2);
+                       padding:1px 4px;border-radius:3px;font-weight:600;">BOT</span>
+        </div>
+      </div>
+
+      <!-- Plain text preview -->
+      <div id="prev-plain" style="color:#dbdee1;font-size:14px;line-height:1.5;padding-left:46px;white-space:pre-wrap;word-break:break-word;"></div>
+
+      <!-- Embed preview -->
+      <div id="prev-embed-wrap" style="padding-left:46px;display:none;">
+        <div id="prev-embed" style="background:#2b2d31;border-radius:4px;border-left:4px solid #5865F2;padding:12px 14px;max-width:440px;">
+          <div id="prev-embed-title" style="font-weight:700;color:#fff;font-size:14px;margin-bottom:4px;"></div>
+          <div id="prev-embed-desc"  style="color:#dbdee1;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"></div>
+        </div>
+      </div>
+
+      <div id="prev-empty" style="color:#72767d;font-size:13px;padding-left:46px;font-style:italic;">
+        Start typing to see a preview…
+      </div>
+    </div>
+
+    <!-- Placeholder legend -->
+    <div style="margin-top:14px;padding:10px 12px;background:var(--layer2);border-radius:var(--r);font-size:11px;color:var(--t3);">
+      <strong style="color:var(--t2);">Placeholders:</strong>
+      <code style="color:var(--x);">{user}</code> @mention &nbsp;·&nbsp;
+      <code style="color:var(--x);">{server}</code> server name &nbsp;·&nbsp;
+      <code style="color:var(--x);">{count}</code> member count
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">Commands ({{ cmds|length }})</span>
+    <span style="font-size:11px;color:var(--t3);">Members type the trigger word in chat</span>
+  </div>
+  {% if cmds %}
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Trigger</th><th>Type</th><th>Response Preview</th><th>Uses</th><th>Action</th></tr></thead>
+      <tbody id="cc-tbody">
+      {% for c in cmds %}
+      <tr id="ccrow-{{ c.trigger }}">
+        <td><code style="background:var(--x);color:#fff;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:700;">{{ c.trigger }}</code></td>
+        <td><span class="badge {% if c.embed %}badge-blue{% else %}badge-muted{% endif %}">{% if c.embed %}Embed{% else %}Text{% endif %}</span></td>
+        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2);font-size:13px;">{{ c.response[:80] }}</td>
+        <td><span class="mtag" style="font-size:12px;">{{ c.uses }}</span></td>
+        <td><button class="btn btn-danger btn-xs" onclick="deleteCC('{{ c.trigger }}')">Delete</button></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <div class="empty-ico">⚡</div>
+    <div class="empty-title">No custom commands yet</div>
+    <div class="empty-sub">Create one above. Members type the trigger word → bot responds instantly.</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const GUILD = "{{ guild_id }}";
+
+function toggleEmbed(val) {
+  document.getElementById('embed-options').style.display = val === '1' ? 'block' : 'none';
+  livePreview();
+}
+
+function livePreview() {
+  const trigger  = document.getElementById('cc-trigger').value.trim();
+  const response = document.getElementById('cc-response').value;
+  const isEmbed  = document.getElementById('cc-embed').value === '1';
+  const title    = document.getElementById('cc-title')?.value.trim() || '';
+  const color    = document.getElementById('cc-color')?.value || '#5865F2';
+
+  const plain     = document.getElementById('prev-plain');
+  const embedWrap = document.getElementById('prev-embed-wrap');
+  const embedEl   = document.getElementById('prev-embed');
+  const titleEl   = document.getElementById('prev-embed-title');
+  const descEl    = document.getElementById('prev-embed-desc');
+  const emptyEl   = document.getElementById('prev-empty');
+
+  const preview = response
+    .replace(/{user}/g, '@Member')
+    .replace(/{server}/g, '{{ guild.get("name","Server") }}')
+    .replace(/{count}/g, '100');
+
+  if (!response.trim()) {
+    plain.style.display     = 'none';
+    embedWrap.style.display = 'none';
+    emptyEl.style.display   = 'block';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+
+  if (isEmbed) {
+    plain.style.display     = 'none';
+    embedWrap.style.display = 'block';
+    embedEl.style.borderLeftColor = color;
+    titleEl.textContent = title;
+    titleEl.style.display = title ? 'block' : 'none';
+    descEl.textContent  = preview;
+  } else {
+    plain.style.display     = 'block';
+    embedWrap.style.display = 'none';
+    plain.textContent = preview;
+  }
+}
+
+async function createCC() {
+  const trigger  = document.getElementById('cc-trigger').value.trim().toLowerCase();
+  const response = document.getElementById('cc-response').value.trim();
+  const embed    = document.getElementById('cc-embed').value;
+  const title    = document.getElementById('cc-title')?.value.trim() || '';
+  const color    = document.getElementById('cc-color')?.value || '#5865F2';
+  if (!trigger) { toast('Enter a trigger word', 'err'); return; }
+  if (!response) { toast('Enter a response', 'err'); return; }
+  const r = await apiPost(`/dashboard/${GUILD}/custom-commands/add`,
+    {trigger, response, embed, embed_title: title, embed_color: color});
+  if (r.ok) {
+    toast(`Command "${trigger}" created!`);
+    setTimeout(() => location.reload(), 600);
+  } else {
+    toast(r.error || 'Failed', 'err');
+  }
+}
+
+async function deleteCC(trigger) {
+  if (!confirm(`Delete command "${trigger}"?`)) return;
+  const r = await apiPost(`/dashboard/${GUILD}/custom-commands/delete/${trigger}`);
+  if (r.ok) { document.getElementById(`ccrow-${trigger}`)?.remove(); toast(`"${trigger}" deleted`); }
+  else toast(r.error || 'Failed', 'err');
+}
+</script>
+{% endblock %}

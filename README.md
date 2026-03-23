@@ -100,4 +100,3 @@ Discord Bot ──writes──▶ data/bot.db ◀──reads/writes── Flask 
 Both processes share the same SQLite file. Changes made in the dashboard
 (e.g. setting a log channel) are immediately visible to the bot on its
 next interaction, since the bot queries the DB fresh on every command.
-"# Sys-Severus-DashBoard" 

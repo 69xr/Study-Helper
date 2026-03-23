@@ -92,26 +92,39 @@ class SyntheticInteraction:
 # ══════════════════════════════════════════════════════════
 
 ALL_COMMANDS = [
-    "ping","avatar","banner","uptime","botinfo","help","server","servericon","serverbanner",
-    "membercount","userinfo","roles","roleinfo","emojiinfo","snipe",
-    "kick","ban","unban","mute","unmute","warn","warnings","clearwarns","delwarn",
-    "clear","slowmode","lockdown","unlockdown",
-    "setuprole","panels","deletepanel",
-    "setlog","setwelcome","settings","ticketsetup","levelsetup","suggestsetup",
-    "temproom setup","temproom rename","temproom limit","temproom lock","temproom unlock",
-    "temproom kick","temproom ban","temproom unban","temproom transfer",
-    "temproom delete","temproom invite","temproom info",
-    "ticket open","ticket close","ticket claim","ticket add",
-    "ticket remove","ticket panel","ticket transcript",
-    "balance","daily","work","pay","leaderboard","shop","buy","inventory",
-    "deposit","withdraw","rob","slots",
-    "eco give","eco take","eco reset","eco additem","eco removeitem",
-    "rank","levels","levelsetup","setlevelrole","removelevelrole","resetxp","setxp",
-    "suggest","suggestion approve","suggestion deny",
-    "automod toggle","automod spam","automod links","automod words",
-    "automod caps","automod mentions","automod exempt","automod status",
-    "alias add","alias remove","alias list",
-    "blacklist","unblacklist","blacklistview","reload","shutdown","announce","botstats","dm",
+    # General
+    "ping", "avatar", "banner", "uptime", "botinfo", "help",
+    "server", "servericon", "serverbanner", "membercount",
+    "userinfo", "roleinfo", "emojiinfo", "snipe",
+    "remind", "reminders", "remindcancel", "afk",
+    # Moderation
+    "kick", "ban", "unban", "mute", "unmute", "setupmute",
+    "timeout", "untimeout",
+    "warn", "warnings", "clearwarns", "delwarn",
+    "clear", "slowmode", "lockdown", "unlockdown",
+    "note add", "note view", "note delete",
+    "warnthreshold set", "warnthreshold list", "warnthreshold remove",
+    # Roles
+    "panels", "autorole add", "autorole remove", "autorole list",
+    # Settings
+    "setlog", "setwelcome", "settings",
+    # Temp Rooms
+    "temproom setup", "temproom rename", "temproom limit",
+    "temproom lock", "temproom unlock", "temproom kick",
+    "temproom ban", "temproom unban", "temproom transfer",
+    "temproom delete", "temproom invite", "temproom info",
+    # Music
+    "play", "pause", "resume", "skip", "stop", "queue",
+    "nowplaying", "volume", "loop", "shuffle", "remove", "join", "leave", "clearqueue",
+    # Community / AutoMod
+    "automod toggle", "automod spam", "automod links", "automod words",
+    "automod caps", "automod mentions", "automod exempt", "automod status",
+    "alias add", "alias remove", "alias list",
+    # Security
+    "lockserver", "unlockserver", "antiraid", "verification",
+    # Owner
+    "blacklist", "unblacklist", "blacklistview",
+    "reload", "shutdown", "announce", "botstats", "dm",
 ]
 
 alias_group = app_commands.Group(name="alias", description="Manage command aliases for this server.")
@@ -220,12 +233,15 @@ class Aliases(commands.Cog):
         if not content: return
 
         parts     = content.split()
-        alias     = parts[0].lower()
+        # Strip any leading prefix characters (!, /, .) so "!a" → "a", "/a" → "a"
+        alias     = parts[0].lstrip("!/." ).lower()
         user_args = parts[1:]
+
+        if not alias:
+            return
 
         # Only act if this word is a registered alias — checked against DB first
         # so normal chat messages are NEVER intercepted
-
         command_name = await db.get_alias_command(message.guild.id, alias)
         if not command_name: return
 
