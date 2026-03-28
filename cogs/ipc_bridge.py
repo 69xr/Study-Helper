@@ -7,35 +7,48 @@ import asyncio, traceback, logging
 import discord
 from discord.ext import commands, tasks
 from utils.ipc import bot_emit, bot_ack, bot_read_commands, write_module_state, read_module_state
+from utils.product_catalog import module_catalog
 
 log = logging.getLogger("severus.ipc")
 
 # Map cog display names → extension paths
-COG_MODULES = {
-    "automod":        "cogs.automod",
-    "music":          "cogs.music.player",
-    "music_lyrics":   "cogs.music.lyrics",
-    "temprooms":      "cogs.temprooms.rooms",
-    "logging":        "cogs.logging.logger",
-    "security":       "cogs.security.security",
-    "role_panels":    "cogs.roles.panels",
-    "autoroles":      "cogs.community.autoroles",
-    "custom_commands":"cogs.community.custom_commands",
-    "reminders":      "cogs.general.reminders",
-    "afk":            "cogs.general.afk",
-    "snipe":          "cogs.general.snipe",
-    "aliases":        "cogs.settings.aliases",
-}
-
-
 class IPCBridge(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self._maintenance_guilds: set[int] = set()
-        self.poll_commands.start()
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        if not self.poll_commands.is_running():
+            self.poll_commands.start()
 
     def cog_unload(self):
-        self.poll_commands.cancel()
+        if self.poll_commands.is_running():
+            self.poll_commands.cancel()
+
+    def _module_catalog(self):
+        canonical = getattr(self.bot, "canonical_cogs", tuple(self.bot.extensions.keys()))
+        return module_catalog(canonical)
+
+    def _snapshot_modules(self):
+        prior = read_module_state()
+        snapshot = {}
+        for key, meta in self._module_catalog().items():
+            cached = prior.get(key, {})
+            loaded = meta["ext"] in self.bot.extensions
+            snapshot[key] = {
+                "enabled": loaded,
+                "loaded": loaded,
+                "maintenance": cached.get("maintenance", False),
+                "maintenance_reason": cached.get("maintenance_reason", ""),
+                "reason": cached.get("maintenance_reason", ""),
+                "ext": meta["ext"],
+                "name": meta["name"],
+                "description": meta["description"],
+                "manageable": meta["manageable"],
+            }
+        write_module_state(snapshot)
+        return snapshot
 
     # ── Command poller ────────────────────────────────────────
 
@@ -55,7 +68,12 @@ class IPCBridge(commands.Cog):
 
     @poll_commands.before_loop
     async def _before_poll(self):
-        await self.bot.wait_until_ready()
+        try:
+            await self.bot.wait_until_ready()
+        except RuntimeError:
+            self.poll_commands.stop()
+            return
+        self._snapshot_modules()
         bot_emit("SUCCESS", f"IPC bridge online — {self.bot.user}")
 
     # ── Dispatcher ────────────────────────────────────────────
@@ -75,14 +93,20 @@ class IPCBridge(commands.Cog):
             msg = f"Reloaded {len(ok_list)} cog(s)."
             if fail_list:
                 msg += f" Failed: {', '.join(fail_list)}"
+            self._snapshot_modules()
             bot_emit("SUCCESS" if not fail_list else "WARN", msg)
             bot_ack(cid, not fail_list, msg, {"reloaded": ok_list, "failed": fail_list})
 
         # ── sync_commands ────────────────────────────────────
         elif action == "sync_commands":
             try:
-                synced = await self.bot.tree.sync()
-                msg = f"Synced {len(synced)} slash command(s) globally."
+                if hasattr(self.bot, "_sync_application_commands"):
+                    await self.bot._sync_application_commands()
+                    synced = self.bot.tree.get_commands()
+                    msg = f"Synced {len(synced)} slash command(s) and cleaned dev overrides."
+                else:
+                    synced = await self.bot.tree.sync()
+                    msg = f"Synced {len(synced)} slash command(s) globally."
                 bot_emit("SUCCESS", msg)
                 bot_ack(cid, True, msg, {"count": len(synced)})
             except Exception as e:
@@ -115,18 +139,20 @@ class IPCBridge(commands.Cog):
         # ── enable_module ────────────────────────────────────
         elif action == "enable_module":
             module = params.get("module")
-            ext    = COG_MODULES.get(module)
-            if not ext:
+            meta   = self._module_catalog().get(module)
+            if not meta:
                 bot_ack(cid, False, f"Unknown module: {module}")
                 return
+            if not meta["manageable"]:
+                bot_ack(cid, False, f"Module '{module}' is locked for dashboard safety.")
+                return
+            ext = meta["ext"]
             if ext in self.bot.extensions:
                 bot_ack(cid, True, f"{module} is already loaded.")
                 return
             try:
                 await self.bot.load_extension(ext)
-                state = read_module_state()
-                state[module] = {"enabled": True, "maintenance": False}
-                write_module_state(state)
+                self._snapshot_modules()
                 msg = f"Module '{module}' enabled."
                 bot_emit("SUCCESS", msg)
                 bot_ack(cid, True, msg)
@@ -137,18 +163,20 @@ class IPCBridge(commands.Cog):
         # ── disable_module ───────────────────────────────────
         elif action == "disable_module":
             module = params.get("module")
-            ext    = COG_MODULES.get(module)
-            if not ext:
+            meta   = self._module_catalog().get(module)
+            if not meta:
                 bot_ack(cid, False, f"Unknown module: {module}")
                 return
+            if not meta["manageable"]:
+                bot_ack(cid, False, f"Module '{module}' is locked for dashboard safety.")
+                return
+            ext = meta["ext"]
             if ext not in self.bot.extensions:
                 bot_ack(cid, True, f"{module} is already unloaded.")
                 return
             try:
                 await self.bot.unload_extension(ext)
-                state = read_module_state()
-                state[module] = {"enabled": False, "maintenance": False}
-                write_module_state(state)
+                self._snapshot_modules()
                 msg = f"Module '{module}' disabled."
                 bot_emit("WARN", msg)
                 bot_ack(cid, True, msg)
@@ -162,12 +190,16 @@ class IPCBridge(commands.Cog):
             enable     = params.get("enable", True)
             reason     = params.get("reason", "Under maintenance")
             guild_id   = params.get("guild_id")  # None = all guilds
+            if module not in self._module_catalog():
+                bot_ack(cid, False, f"Unknown module: {module}")
+                return
             state      = read_module_state()
             if module not in state:
                 state[module] = {"enabled": True, "maintenance": False}
             state[module]["maintenance"]        = enable
             state[module]["maintenance_reason"] = reason if enable else ""
             write_module_state(state)
+            self._snapshot_modules()
             mode = "enabled" if enable else "disabled"
             msg  = f"Maintenance mode {mode} for '{module}'. Reason: {reason}"
             bot_emit("WARN" if enable else "SUCCESS", msg)
@@ -231,8 +263,8 @@ class IPCBridge(commands.Cog):
                     a = embed_data["author"]
                     embed.set_author(
                         name     = a.get("name", ""),
-                        url      = a.get("url") or discord.Embed.Empty,
-                        icon_url = a.get("icon_url") or discord.Embed.Empty,
+                        url      = a.get("url") or None,
+                        icon_url = a.get("icon_url") or None,
                     )
                 for field in embed_data.get("fields", []):
                     embed.add_field(
@@ -248,7 +280,7 @@ class IPCBridge(commands.Cog):
                     ft = embed_data["footer"]
                     embed.set_footer(
                         text     = ft.get("text", ""),
-                        icon_url = ft.get("icon_url") or discord.Embed.Empty,
+                        icon_url = ft.get("icon_url") or None,
                     )
                 if embed_data.get("timestamp"):
                     from datetime import datetime, timezone
@@ -289,15 +321,7 @@ class IPCBridge(commands.Cog):
 
         # ── get_module_state ─────────────────────────────────
         elif action == "get_module_state":
-            state = {}
-            for name, ext in COG_MODULES.items():
-                mstate = read_module_state().get(name, {})
-                state[name] = {
-                    "loaded":      ext in self.bot.extensions,
-                    "maintenance": mstate.get("maintenance", False),
-                    "reason":      mstate.get("maintenance_reason", ""),
-                    "ext":         ext,
-                }
+            state = self._snapshot_modules()
             bot_ack(cid, True, "Module state fetched.", {"modules": state})
 
         else:

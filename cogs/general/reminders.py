@@ -37,10 +37,15 @@ def fmt_duration(secs: int) -> str:
 class Reminders(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.check_reminders.start()
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        if not self.check_reminders.is_running():
+            self.check_reminders.start()
 
     def cog_unload(self):
-        self.check_reminders.cancel()
+        if self.check_reminders.is_running():
+            self.check_reminders.cancel()
 
     @tasks.loop(seconds=30)
     async def check_reminders(self):

@@ -175,7 +175,7 @@ class Security(commands.Cog):
 
     # ── Emergency Slash Commands (Discord-only, no Dashboard equivalent) ──
 
-    @app_commands.command(name="lockserver", description="🚨 Lock ALL channels instantly.")
+    @app_commands.command(name="lockserver", description="Emergency: lock all text channels immediately.")
     @app_commands.describe(reason="Reason for lockdown")
     @app_commands.checks.has_permissions(administrator=True)
     async def lockserver(self, interaction: discord.Interaction, reason: str = "Emergency lockdown"):
@@ -200,7 +200,7 @@ class Security(commands.Cog):
         if s and s.get("log_channel"):
             await send_log(interaction.guild, s["log_channel"], embed)
 
-    @app_commands.command(name="unlockserver", description="Unlock all channels after lockdown.")
+    @app_commands.command(name="unlockserver", description="Emergency: restore text channel sending after a lockdown.")
     @app_commands.checks.has_permissions(administrator=True)
     async def unlockserver(self, interaction: discord.Interaction):
         await interaction.response.defer()

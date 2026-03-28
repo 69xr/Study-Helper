@@ -17,7 +17,7 @@ class Lyrics(commands.Cog):
     def __init__(self, bot): self.bot = bot
 
     @app_commands.command(name="lyrics",
-                          description="Get lyrics for a song (or the currently playing track).")
+                          description="Fetch lyrics for a song or the current track.")
     @app_commands.describe(query="Song name (e.g. 'Never Gonna Give You Up' or 'Rick Astley Never')")
     async def lyrics(self, interaction: discord.Interaction, query: str = None):
         await interaction.response.defer()

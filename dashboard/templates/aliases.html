@@ -47,13 +47,13 @@
     <div style="display:flex;flex-direction:column;gap:6px;">
       {% set examples = [
         ('a',    'avatar',      'View avatar'),
-        ('r',    'rank',        'Check XP rank'),
-        ('bal',  'balance',     'Check coins'),
-        ('lb',   'leaderboard', 'Coin leaderboard'),
-        ('lvls', 'levels',      'Level leaderboard'),
+        ('h',    'help',        'Open command help'),
         ('w',    'warn',        'Warn a member'),
-        ('t',    'ticket open', 'Open a ticket'),
-        ('s',    'slots',       'Play slots'),
+        ('tm',   'temproom info','View temp room details'),
+        ('pl',   'play',        'Start music playback'),
+        ('rm',   'remind',      'Create a reminder'),
+        ('afk',  'afk',         'Set AFK status'),
+        ('poll', 'poll',        'Start a poll'),
       ] %}
       {% for alias, cmd, desc in examples %}
       <div style="display:flex;align-items:center;justify-content:space-between;

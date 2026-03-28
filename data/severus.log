@@ -43,3 +43,826 @@
 22:36:21 [INFO    ] severus:   📡  Connected to 1 guild(s)
 22:36:21 [INFO    ] severus: ====================================================
 22:37:03 [INFO    ] severus.ipc: IPC action: get_module_state (id=3c636b0c)
+19:53:28 [INFO    ] severus: Database ready.
+19:53:28 [INFO    ] severus:   ✅  cogs.general.ping
+19:53:28 [INFO    ] severus:   ✅  cogs.general.avatar
+19:53:28 [INFO    ] severus:   ✅  cogs.general.uptime
+19:53:28 [INFO    ] severus:   ✅  cogs.general.serverinfo
+19:53:28 [INFO    ] severus:   ✅  cogs.general.userinfo
+19:53:28 [INFO    ] severus:   ✅  cogs.general.snipe
+19:53:28 [INFO    ] severus:   ✅  cogs.general.help
+19:53:28 [INFO    ] severus:   ✅  cogs.general.reminders
+19:53:28 [INFO    ] severus:   ✅  cogs.general.afk
+19:53:28 [INFO    ] severus:   ✅  cogs.moderation.kick
+19:53:28 [INFO    ] severus:   ✅  cogs.moderation.ban
+19:53:28 [INFO    ] severus:   ✅  cogs.moderation.warn
+19:53:28 [INFO    ] severus:   ✅  cogs.moderation.clear
+19:53:28 [INFO    ] severus:   ✅  cogs.moderation.mute
+19:53:28 [INFO    ] severus:   ✅  cogs.moderation.slowmode
+19:53:28 [INFO    ] severus:   ✅  cogs.moderation.timeout
+19:53:28 [INFO    ] severus:   ✅  cogs.moderation.notes
+19:53:28 [INFO    ] severus:   ✅  cogs.moderation.thresholds
+19:53:28 [INFO    ] severus:   ✅  cogs.roles.panels
+19:53:28 [INFO    ] severus:   ✅  cogs.settings.aliases
+19:53:28 [INFO    ] severus:   ✅  cogs.automod
+19:53:28 [INFO    ] severus:   ✅  cogs.logging.logger
+19:53:28 [INFO    ] severus:   ✅  cogs.temprooms.rooms
+19:53:28 [INFO    ] severus:   ✅  cogs.temprooms.invite
+19:53:28 [INFO    ] severus:   ✅  cogs.community.custom_commands
+19:53:28 [INFO    ] severus:   ✅  cogs.community.autoroles
+19:53:28 [INFO    ] severus:   ✅  cogs.community.polls
+19:53:28 [INFO    ] severus:   ✅  cogs.community.giveaways
+19:53:28 [INFO    ] severus:   ✅  cogs.community.starboard
+19:53:29 [INFO    ] severus:   ✅  cogs.music.player
+19:53:29 [INFO    ] severus:   ✅  cogs.music.lyrics
+19:53:29 [INFO    ] severus:   ✅  cogs.security.security
+19:53:29 [INFO    ] severus:   ✅  cogs.owner
+19:53:29 [INFO    ] severus:   ✅  cogs.ipc_bridge
+19:53:29 [INFO    ] severus: Restored 0 role panel view(s).
+19:53:29 [INFO    ] severus: VerifyView restored.
+19:53:29 [INFO    ] severus: Syncing slash commands with Discord…
+19:53:29 [INFO    ] severus: ✅  Global sync complete: 81 command(s) registered.
+19:53:30 [INFO    ] severus: ⚡  Dev guild instant sync: 81 command(s).
+19:53:33 [INFO    ] severus: ====================================================
+19:53:33 [INFO    ] severus:   🤖  Logged in as mOoN#1384  (1317208885521813615)
+19:53:33 [INFO    ] severus:   📡  Connected to 1 guild(s)
+19:53:33 [INFO    ] severus: ====================================================
+19:54:15 [INFO    ] discord.voice_state: Connecting to voice...
+19:54:15 [INFO    ] discord.voice_state: Starting voice handshake... (connection attempt 1)
+19:54:15 [INFO    ] discord.voice_state: Voice handshake complete. Endpoint found: c-mxp01-3930ed6b.discord.media:2096
+19:54:16 [INFO    ] discord.voice_state: Voice connection complete.
+19:54:24 [INFO    ] discord.voice_state: Disconnected from voice by force... potentially reconnecting.
+19:57:25 [INFO    ] discord.voice_state: The voice handshake is being terminated for Channel ID 1477808194347597854 (Guild ID 1104701279005069334)
+19:57:26 [INFO    ] discord.player: ffmpeg process 5908 has not terminated. Waiting to terminate...
+19:57:26 [INFO    ] discord.player: ffmpeg process 5908 should have terminated with a return code of 1.
+06:18:42 [INFO    ] severus: Database ready.
+06:18:42 [INFO    ] severus:   ✅  cogs.general.ping
+06:18:42 [INFO    ] severus:   ✅  cogs.general.avatar
+06:18:42 [INFO    ] severus:   ✅  cogs.general.uptime
+06:18:42 [INFO    ] severus:   ✅  cogs.general.serverinfo
+06:18:42 [INFO    ] severus:   ✅  cogs.general.userinfo
+06:18:42 [INFO    ] severus:   ✅  cogs.general.snipe
+06:18:42 [INFO    ] severus:   ✅  cogs.general.help
+06:18:42 [INFO    ] severus:   ✅  cogs.general.reminders
+06:18:42 [INFO    ] severus:   ✅  cogs.general.afk
+06:18:42 [INFO    ] severus:   ✅  cogs.moderation.kick
+06:18:42 [INFO    ] severus:   ✅  cogs.moderation.ban
+06:18:42 [INFO    ] severus:   ✅  cogs.moderation.warn
+06:18:42 [INFO    ] severus:   ✅  cogs.moderation.clear
+06:18:42 [INFO    ] severus:   ✅  cogs.moderation.mute
+06:18:42 [INFO    ] severus:   ✅  cogs.moderation.slowmode
+06:18:42 [INFO    ] severus:   ✅  cogs.moderation.timeout
+06:18:42 [INFO    ] severus:   ✅  cogs.moderation.notes
+06:18:42 [INFO    ] severus:   ✅  cogs.moderation.thresholds
+06:18:42 [INFO    ] severus:   ✅  cogs.roles.panels
+06:18:42 [INFO    ] severus:   ✅  cogs.settings.aliases
+06:18:42 [INFO    ] severus:   ✅  cogs.automod
+06:18:42 [INFO    ] severus:   ✅  cogs.logging.logger
+06:18:42 [INFO    ] severus:   ✅  cogs.temprooms.rooms
+06:18:42 [INFO    ] severus:   ✅  cogs.temprooms.invite
+06:18:42 [INFO    ] severus:   ✅  cogs.community.custom_commands
+06:18:42 [INFO    ] severus:   ✅  cogs.community.autoroles
+06:18:42 [INFO    ] severus:   ✅  cogs.community.polls
+06:18:42 [INFO    ] severus:   ✅  cogs.community.giveaways
+06:18:42 [INFO    ] severus:   ✅  cogs.community.starboard
+06:18:42 [INFO    ] severus:   ✅  cogs.focus.timer
+06:18:42 [INFO    ] severus:   ✅  cogs.focus.profile
+06:18:42 [INFO    ] severus:   ✅  cogs.focus.pets
+06:18:45 [INFO    ] severus:   ✅  cogs.music.player
+06:18:45 [INFO    ] severus:   ✅  cogs.music.lyrics
+06:18:45 [INFO    ] severus:   ✅  cogs.security.security
+06:18:45 [INFO    ] severus:   ✅  cogs.owner
+06:18:45 [INFO    ] severus:   ✅  cogs.ipc_bridge
+06:18:45 [INFO    ] severus: Restored 0 role panel view(s).
+06:18:45 [INFO    ] severus: VerifyView restored.
+06:18:45 [INFO    ] severus: Syncing slash commands with Discord…
+06:18:46 [INFO    ] severus: ✅  Global sync complete: 91 command(s) registered.
+06:18:46 [INFO    ] severus: ⚡  Dev guild instant sync: 91 command(s).
+06:18:50 [INFO    ] severus: ====================================================
+06:18:50 [INFO    ] severus:   🤖  Logged in as mOoN#1384  (1317208885521813615)
+06:18:50 [INFO    ] severus:   📡  Connected to 1 guild(s)
+06:18:50 [INFO    ] severus: ====================================================
+06:20:02 [INFO    ] severus.ipc: IPC action: get_module_state (id=75e219a3)
+07:05:11 [INFO    ] severus: Database ready.
+07:05:11 [INFO    ] severus:   ✅  cogs.general.ping
+07:05:11 [INFO    ] severus:   ✅  cogs.general.avatar
+07:05:11 [INFO    ] severus:   ✅  cogs.general.uptime
+07:05:11 [INFO    ] severus:   ✅  cogs.general.serverinfo
+07:05:11 [INFO    ] severus:   ✅  cogs.general.userinfo
+07:05:11 [INFO    ] severus:   ✅  cogs.general.snipe
+07:05:11 [INFO    ] severus:   ✅  cogs.general.help
+07:05:11 [INFO    ] severus:   ✅  cogs.general.reminders
+07:05:11 [INFO    ] severus:   ✅  cogs.general.afk
+07:05:11 [INFO    ] severus:   ✅  cogs.moderation.kick
+07:05:11 [INFO    ] severus:   ✅  cogs.moderation.ban
+07:05:11 [INFO    ] severus:   ✅  cogs.moderation.warn
+07:05:11 [INFO    ] severus:   ✅  cogs.moderation.clear
+07:05:11 [INFO    ] severus:   ✅  cogs.moderation.mute
+07:05:11 [INFO    ] severus:   ✅  cogs.moderation.slowmode
+07:05:11 [INFO    ] severus:   ✅  cogs.moderation.timeout
+07:05:11 [INFO    ] severus:   ✅  cogs.moderation.notes
+07:05:11 [INFO    ] severus:   ✅  cogs.moderation.thresholds
+07:05:11 [INFO    ] severus:   ✅  cogs.roles.panels
+07:05:11 [INFO    ] severus:   ✅  cogs.settings.config
+07:05:11 [INFO    ] severus:   ✅  cogs.settings.aliases
+07:05:11 [INFO    ] severus:   ✅  cogs.automod
+07:05:11 [INFO    ] severus:   ✅  cogs.logging.logger
+07:05:11 [INFO    ] severus:   ✅  cogs.temprooms.rooms
+07:05:11 [INFO    ] severus:   ✅  cogs.temprooms.invite
+07:05:11 [INFO    ] severus:   ✅  cogs.community.custom_commands
+07:05:11 [INFO    ] severus:   ✅  cogs.community.autoroles
+07:05:11 [INFO    ] severus:   ✅  cogs.community.polls
+07:05:11 [INFO    ] severus:   ✅  cogs.community.giveaways
+07:05:11 [INFO    ] severus:   ✅  cogs.community.starboard
+07:05:11 [INFO    ] severus:   ✅  cogs.focus.timer
+07:05:11 [INFO    ] severus:   ✅  cogs.focus.profile
+07:05:11 [INFO    ] severus:   ✅  cogs.focus.pets
+07:05:12 [INFO    ] severus:   ✅  cogs.music.player
+07:05:12 [INFO    ] severus:   ✅  cogs.music.lyrics
+07:05:12 [INFO    ] severus:   ✅  cogs.security.security
+07:05:12 [INFO    ] severus:   ✅  cogs.owner
+07:05:12 [INFO    ] severus:   ✅  cogs.ipc_bridge
+07:05:12 [INFO    ] severus: Restored 0 role panel view(s).
+07:05:12 [INFO    ] severus: VerifyView restored.
+07:05:12 [INFO    ] severus: Syncing slash commands with Discord…
+07:05:12 [INFO    ] severus: ✅  Global sync complete: 91 command(s) registered.
+07:05:13 [INFO    ] severus: ⚡  Dev guild instant sync: 91 command(s).
+07:05:15 [INFO    ] severus: ====================================================
+07:05:15 [INFO    ] severus:   🤖  Logged in as mOoN#1384  (1317208885521813615)
+07:05:15 [INFO    ] severus:   📡  Connected to 1 guild(s)
+07:05:15 [INFO    ] severus: ====================================================
+07:06:13 [ERROR   ] discord.app_commands.tree: Ignoring exception in command 'timer'
+Traceback (most recent call last):
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 858, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Enviroment\Projects\Sys - serervus\cogs\focus\timer.py", line 205, in timer
+    embed = self._make_embed(t, total, duration, break_time,
+                             vc.name, names, xp_pm, coins_pm)
+  File "D:\Enviroment\Projects\Sys - serervus\cogs\focus\timer.py", line 480, in _make_embed
+    embed = base_embed(
+        title=f"{theme.label} | {m:02d}:{s:02d}",
+    ...<5 lines>...
+        color=theme.discord_color,
+    )
+  File "D:\Enviroment\Projects\Sys - serervus\utils\helpers.py", line 52, in base_embed
+    return _footer(_brand(e))
+                   ~~~~~~^^^
+  File "D:\Enviroment\Projects\Sys - serervus\utils\helpers.py", line 40, in _brand
+    embed.set_author(name=_brand_line(), icon_url=config.FOOTER_ICON or discord.Embed.Empty)
+                                                                        ^^^^^^^^^^^^^^^^^^^
+AttributeError: type object 'Embed' has no attribute 'Empty'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Python314\Lib\site-packages\discord\app_commands\tree.py", line 1302, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 884, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 877, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'timer' raised an exception: AttributeError: type object 'Embed' has no attribute 'Empty'
+08:11:45 [INFO    ] severus: Database ready.
+08:11:46 [INFO    ] severus:   ✅  cogs.general.ping
+08:11:46 [INFO    ] severus:   ✅  cogs.general.avatar
+08:11:46 [INFO    ] severus:   ✅  cogs.general.uptime
+08:11:46 [INFO    ] severus:   ✅  cogs.general.serverinfo
+08:11:46 [INFO    ] severus:   ✅  cogs.general.userinfo
+08:11:46 [INFO    ] severus:   ✅  cogs.general.snipe
+08:11:46 [INFO    ] severus:   ✅  cogs.general.help
+08:11:46 [INFO    ] severus:   ✅  cogs.general.reminders
+08:11:46 [INFO    ] severus:   ✅  cogs.general.afk
+08:11:46 [INFO    ] severus:   ✅  cogs.moderation.kick
+08:11:46 [INFO    ] severus:   ✅  cogs.moderation.ban
+08:11:46 [INFO    ] severus:   ✅  cogs.moderation.warn
+08:11:46 [INFO    ] severus:   ✅  cogs.moderation.clear
+08:11:46 [INFO    ] severus:   ✅  cogs.moderation.mute
+08:11:46 [INFO    ] severus:   ✅  cogs.moderation.slowmode
+08:11:46 [INFO    ] severus:   ✅  cogs.moderation.timeout
+08:11:46 [INFO    ] severus:   ✅  cogs.moderation.notes
+08:11:46 [INFO    ] severus:   ✅  cogs.moderation.thresholds
+08:11:46 [INFO    ] severus:   ✅  cogs.roles.panels
+08:11:46 [INFO    ] severus:   ✅  cogs.settings.config
+08:11:46 [INFO    ] severus:   ✅  cogs.settings.aliases
+08:11:46 [INFO    ] severus:   ✅  cogs.automod
+08:11:46 [INFO    ] severus:   ✅  cogs.logging.logger
+08:11:46 [INFO    ] severus:   ✅  cogs.temprooms.rooms
+08:11:46 [INFO    ] severus:   ✅  cogs.temprooms.invite
+08:11:46 [INFO    ] severus:   ✅  cogs.community.custom_commands
+08:11:46 [INFO    ] severus:   ✅  cogs.community.autoroles
+08:11:46 [INFO    ] severus:   ✅  cogs.community.polls
+08:11:46 [INFO    ] severus:   ✅  cogs.community.starboard
+08:11:46 [INFO    ] severus:   ✅  cogs.focus.timer
+08:11:46 [INFO    ] severus:   ✅  cogs.focus.profile
+08:11:46 [INFO    ] severus:   ✅  cogs.focus.pets
+08:11:47 [INFO    ] severus:   ✅  cogs.music.player
+08:11:47 [INFO    ] severus:   ✅  cogs.music.lyrics
+08:11:47 [INFO    ] severus:   ✅  cogs.security.security
+08:11:47 [INFO    ] severus:   ✅  cogs.owner
+08:11:47 [INFO    ] severus:   ✅  cogs.ipc_bridge
+08:11:47 [INFO    ] severus: Restored 0 role panel view(s).
+08:11:47 [INFO    ] severus: VerifyView restored.
+08:11:47 [INFO    ] severus: Syncing slash commands with Discord…
+08:11:47 [ERROR   ] asyncio: Task exception was never retrieved
+future: <Task finished name='discord-ext-tasks: Reminders.check_reminders' coro=<Loop._loop() done, defined at C:\Python314\Lib\site-packages\discord\ext\tasks\__init__.py:208> exception=RuntimeError('Client has not been properly initialised. Please use the login method or asynchronous context manager before calling this method')>
+Traceback (most recent call last):
+  File "C:\Python314\Lib\site-packages\discord\ext\tasks\__init__.py", line 210, in _loop
+  File "C:\Python314\Lib\site-packages\discord\ext\tasks\__init__.py", line 194, in _call_loop_function
+  File "D:\Enviroment\Projects\Sys - serervus\cogs\general\reminders.py", line 90, in before_check
+  File "C:\Python314\Lib\site-packages\discord\client.py", line 1230, in wait_until_ready
+RuntimeError: Client has not been properly initialised. Please use the login method or asynchronous context manager before calling this method
+08:11:47 [ERROR   ] asyncio: Task exception was never retrieved
+future: <Task finished name='discord-ext-tasks: IPCBridge.poll_commands' coro=<Loop._loop() done, defined at C:\Python314\Lib\site-packages\discord\ext\tasks\__init__.py:208> exception=RuntimeError('Client has not been properly initialised. Please use the login method or asynchronous context manager before calling this method')>
+Traceback (most recent call last):
+  File "C:\Python314\Lib\site-packages\discord\ext\tasks\__init__.py", line 210, in _loop
+  File "C:\Python314\Lib\site-packages\discord\ext\tasks\__init__.py", line 194, in _call_loop_function
+  File "D:\Enviroment\Projects\Sys - serervus\cogs\ipc_bridge.py", line 66, in _before_poll
+  File "C:\Python314\Lib\site-packages\discord\client.py", line 1230, in wait_until_ready
+RuntimeError: Client has not been properly initialised. Please use the login method or asynchronous context manager before calling this method
+08:12:49 [INFO    ] severus: Database ready.
+08:12:49 [INFO    ] severus:   OK  cogs.general.ping
+08:12:49 [INFO    ] severus:   OK  cogs.general.avatar
+08:12:49 [INFO    ] severus:   OK  cogs.general.uptime
+08:12:49 [INFO    ] severus:   OK  cogs.general.serverinfo
+08:12:49 [INFO    ] severus:   OK  cogs.general.userinfo
+08:12:49 [INFO    ] severus:   OK  cogs.general.snipe
+08:12:49 [INFO    ] severus:   OK  cogs.general.help
+08:12:49 [INFO    ] severus:   OK  cogs.general.reminders
+08:12:49 [INFO    ] severus:   OK  cogs.general.afk
+08:12:49 [INFO    ] severus:   OK  cogs.moderation.kick
+08:12:49 [INFO    ] severus:   OK  cogs.moderation.ban
+08:12:49 [INFO    ] severus:   OK  cogs.moderation.warn
+08:12:49 [INFO    ] severus:   OK  cogs.moderation.clear
+08:12:49 [INFO    ] severus:   OK  cogs.moderation.mute
+08:12:49 [INFO    ] severus:   OK  cogs.moderation.slowmode
+08:12:49 [INFO    ] severus:   OK  cogs.moderation.timeout
+08:12:49 [INFO    ] severus:   OK  cogs.moderation.notes
+08:12:49 [INFO    ] severus:   OK  cogs.moderation.thresholds
+08:12:49 [INFO    ] severus:   OK  cogs.roles.panels
+08:12:49 [INFO    ] severus:   OK  cogs.settings.config
+08:12:49 [INFO    ] severus:   OK  cogs.settings.aliases
+08:12:49 [INFO    ] severus:   OK  cogs.automod
+08:12:49 [INFO    ] severus:   OK  cogs.logging.logger
+08:12:49 [INFO    ] severus:   OK  cogs.temprooms.rooms
+08:12:49 [INFO    ] severus:   OK  cogs.temprooms.invite
+08:12:49 [INFO    ] severus:   OK  cogs.community.custom_commands
+08:12:49 [INFO    ] severus:   OK  cogs.community.autoroles
+08:12:49 [INFO    ] severus:   OK  cogs.community.polls
+08:12:49 [INFO    ] severus:   OK  cogs.community.starboard
+08:12:49 [INFO    ] severus:   OK  cogs.focus.timer
+08:12:49 [INFO    ] severus:   OK  cogs.focus.profile
+08:12:49 [INFO    ] severus:   OK  cogs.focus.pets
+08:12:50 [INFO    ] severus:   OK  cogs.music.player
+08:12:50 [INFO    ] severus:   OK  cogs.music.lyrics
+08:12:50 [INFO    ] severus:   OK  cogs.security.security
+08:12:50 [INFO    ] severus:   OK  cogs.owner
+08:12:50 [INFO    ] severus:   OK  cogs.ipc_bridge
+08:12:50 [INFO    ] severus: Restored 0 role panel view(s).
+08:12:50 [INFO    ] severus: VerifyView restored.
+08:12:50 [INFO    ] severus: Skipping slash-command sync because application_id is not ready yet.
+08:12:50 [WARNING ] severus: Dev guild sync failed: Client does not have an application_id set. Either the function was called before on_ready was called or application_id was not passed to the Client constructor.
+08:15:03 [INFO    ] severus: Database ready.
+08:15:03 [INFO    ] severus:   OK  cogs.general.ping
+08:15:03 [INFO    ] severus:   OK  cogs.general.avatar
+08:15:03 [INFO    ] severus:   OK  cogs.general.uptime
+08:15:03 [INFO    ] severus:   OK  cogs.general.serverinfo
+08:15:03 [INFO    ] severus:   OK  cogs.general.userinfo
+08:15:03 [INFO    ] severus:   OK  cogs.general.snipe
+08:15:03 [INFO    ] severus:   OK  cogs.general.help
+08:15:03 [INFO    ] severus:   OK  cogs.general.reminders
+08:15:03 [INFO    ] severus:   OK  cogs.general.afk
+08:15:03 [INFO    ] severus:   OK  cogs.moderation.kick
+08:15:03 [INFO    ] severus:   OK  cogs.moderation.ban
+08:15:03 [INFO    ] severus:   OK  cogs.moderation.warn
+08:15:03 [INFO    ] severus:   OK  cogs.moderation.clear
+08:15:03 [INFO    ] severus:   OK  cogs.moderation.mute
+08:15:03 [INFO    ] severus:   OK  cogs.moderation.slowmode
+08:15:03 [INFO    ] severus:   OK  cogs.moderation.timeout
+08:15:03 [INFO    ] severus:   OK  cogs.moderation.notes
+08:15:03 [INFO    ] severus:   OK  cogs.moderation.thresholds
+08:15:03 [INFO    ] severus:   OK  cogs.roles.panels
+08:15:03 [INFO    ] severus:   OK  cogs.settings.config
+08:15:03 [INFO    ] severus:   OK  cogs.settings.aliases
+08:15:03 [INFO    ] severus:   OK  cogs.automod
+08:15:03 [INFO    ] severus:   OK  cogs.logging.logger
+08:15:03 [INFO    ] severus:   OK  cogs.temprooms.rooms
+08:15:03 [INFO    ] severus:   OK  cogs.temprooms.invite
+08:15:03 [INFO    ] severus:   OK  cogs.community.custom_commands
+08:15:03 [INFO    ] severus:   OK  cogs.community.autoroles
+08:15:03 [INFO    ] severus:   OK  cogs.community.polls
+08:15:03 [INFO    ] severus:   OK  cogs.community.starboard
+08:15:03 [INFO    ] severus:   OK  cogs.focus.timer
+08:15:03 [INFO    ] severus:   OK  cogs.focus.profile
+08:15:03 [INFO    ] severus:   OK  cogs.focus.pets
+08:15:04 [INFO    ] severus:   OK  cogs.music.player
+08:15:04 [INFO    ] severus:   OK  cogs.music.lyrics
+08:15:04 [INFO    ] severus:   OK  cogs.security.security
+08:15:04 [INFO    ] severus:   OK  cogs.owner
+08:15:04 [INFO    ] severus:   OK  cogs.ipc_bridge
+08:15:04 [INFO    ] severus: Restored 0 role panel view(s).
+08:15:04 [INFO    ] severus: VerifyView restored.
+08:15:04 [INFO    ] severus: Skipping slash-command sync because application_id is not ready yet.
+08:18:55 [INFO    ] severus: Database ready.
+08:18:55 [INFO    ] severus:   OK  cogs.general.ping
+08:18:55 [INFO    ] severus:   OK  cogs.general.avatar
+08:18:55 [INFO    ] severus:   OK  cogs.general.uptime
+08:18:55 [INFO    ] severus:   OK  cogs.general.serverinfo
+08:18:55 [INFO    ] severus:   OK  cogs.general.userinfo
+08:18:55 [INFO    ] severus:   OK  cogs.general.snipe
+08:18:55 [INFO    ] severus:   OK  cogs.general.help
+08:18:55 [INFO    ] severus:   OK  cogs.general.reminders
+08:18:55 [INFO    ] severus:   OK  cogs.general.afk
+08:18:55 [INFO    ] severus:   OK  cogs.moderation.kick
+08:18:55 [INFO    ] severus:   OK  cogs.moderation.ban
+08:18:55 [INFO    ] severus:   OK  cogs.moderation.warn
+08:18:55 [INFO    ] severus:   OK  cogs.moderation.clear
+08:18:55 [INFO    ] severus:   OK  cogs.moderation.mute
+08:18:55 [INFO    ] severus:   OK  cogs.moderation.slowmode
+08:18:55 [INFO    ] severus:   OK  cogs.moderation.timeout
+08:18:55 [INFO    ] severus:   OK  cogs.moderation.notes
+08:18:55 [INFO    ] severus:   OK  cogs.moderation.thresholds
+08:18:55 [INFO    ] severus:   OK  cogs.roles.panels
+08:18:55 [INFO    ] severus:   OK  cogs.settings.config
+08:18:55 [INFO    ] severus:   OK  cogs.settings.aliases
+08:18:55 [INFO    ] severus:   OK  cogs.automod
+08:18:55 [INFO    ] severus:   OK  cogs.logging.logger
+08:18:55 [INFO    ] severus:   OK  cogs.temprooms.rooms
+08:18:55 [INFO    ] severus:   OK  cogs.temprooms.invite
+08:18:55 [INFO    ] severus:   OK  cogs.community.custom_commands
+08:18:55 [INFO    ] severus:   OK  cogs.community.autoroles
+08:18:55 [INFO    ] severus:   OK  cogs.community.polls
+08:18:55 [INFO    ] severus:   OK  cogs.community.starboard
+08:18:55 [INFO    ] severus:   OK  cogs.focus.timer
+08:18:55 [INFO    ] severus:   OK  cogs.focus.profile
+08:18:55 [INFO    ] severus:   OK  cogs.focus.pets
+08:18:56 [INFO    ] severus:   OK  cogs.music.player
+08:18:56 [INFO    ] severus:   OK  cogs.music.lyrics
+08:18:56 [INFO    ] severus:   OK  cogs.security.security
+08:18:56 [INFO    ] severus:   OK  cogs.owner
+08:18:56 [INFO    ] severus:   OK  cogs.ipc_bridge
+08:18:56 [INFO    ] severus: Restored 0 role panel view(s).
+08:18:56 [INFO    ] severus: VerifyView restored.
+08:18:56 [INFO    ] severus: Syncing slash commands with Discord...
+08:18:58 [INFO    ] severus: OK  Global sync complete: 86 command(s) registered.
+08:18:58 [INFO    ] severus: OK  Dev guild instant sync: 86 command(s).
+08:19:02 [INFO    ] severus: ====================================================
+08:19:02 [INFO    ] severus:   🤖  Logged in as mOoN#1384  (1317208885521813615)
+08:19:02 [INFO    ] severus:   📡  Connected to 1 guild(s)
+08:19:02 [INFO    ] severus: ====================================================
+08:19:50 [ERROR   ] discord.app_commands.tree: Ignoring exception in command 'timer'
+Traceback (most recent call last):
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 858, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Enviroment\Projects\Sys - serervus\cogs\focus\timer.py", line 205, in timer
+    embed = self._make_embed(t, total, duration, break_time,
+                             vc.name, names, xp_pm, coins_pm)
+  File "D:\Enviroment\Projects\Sys - serervus\cogs\focus\timer.py", line 480, in _make_embed
+    embed = base_embed(
+        title=f"{theme.label} | {m:02d}:{s:02d}",
+    ...<5 lines>...
+        color=theme.discord_color,
+    )
+  File "D:\Enviroment\Projects\Sys - serervus\utils\helpers.py", line 52, in base_embed
+    return _footer(_brand(e))
+                   ~~~~~~^^^
+  File "D:\Enviroment\Projects\Sys - serervus\utils\helpers.py", line 40, in _brand
+    embed.set_author(name=_brand_line(), icon_url=config.FOOTER_ICON or discord.Embed.Empty)
+                                                                        ^^^^^^^^^^^^^^^^^^^
+AttributeError: type object 'Embed' has no attribute 'Empty'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Python314\Lib\site-packages\discord\app_commands\tree.py", line 1302, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 884, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 877, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'timer' raised an exception: AttributeError: type object 'Embed' has no attribute 'Empty'
+08:20:23 [ERROR   ] discord.app_commands.tree: Ignoring exception in command 'help'
+Traceback (most recent call last):
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 858, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Enviroment\Projects\Sys - serervus\cogs\general\help.py", line 180, in help
+    embed = base_embed(
+        title="Severus Command Center",
+    ...<4 lines>...
+        color=config.Colors.PRIMARY,
+    )
+  File "D:\Enviroment\Projects\Sys - serervus\utils\helpers.py", line 52, in base_embed
+    return _footer(_brand(e))
+                   ~~~~~~^^^
+  File "D:\Enviroment\Projects\Sys - serervus\utils\helpers.py", line 40, in _brand
+    embed.set_author(name=_brand_line(), icon_url=config.FOOTER_ICON or discord.Embed.Empty)
+                                                                        ^^^^^^^^^^^^^^^^^^^
+AttributeError: type object 'Embed' has no attribute 'Empty'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Python314\Lib\site-packages\discord\app_commands\tree.py", line 1302, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 884, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 877, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'help' raised an exception: AttributeError: type object 'Embed' has no attribute 'Empty'
+08:20:36 [INFO    ] discord.voice_state: Connecting to voice...
+08:20:36 [INFO    ] discord.voice_state: Starting voice handshake... (connection attempt 1)
+08:20:36 [INFO    ] discord.voice_state: Voice handshake complete. Endpoint found: c-mxp06-d55450d7.discord.media:2087
+08:20:36 [INFO    ] discord.voice_state: Voice connection complete.
+08:20:36 [ERROR   ] discord.app_commands.tree: Ignoring exception in command 'play'
+Traceback (most recent call last):
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 858, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Enviroment\Projects\Sys - serervus\cogs\music\player.py", line 574, in play
+    loading = await interaction.followup.send(embed=music_embed("⏳ Please wait", hint))
+                                                    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Enviroment\Projects\Sys - serervus\utils\helpers.py", line 116, in music_embed
+    return _footer(_brand(e))
+                   ~~~~~~^^^
+  File "D:\Enviroment\Projects\Sys - serervus\utils\helpers.py", line 40, in _brand
+    embed.set_author(name=_brand_line(), icon_url=config.FOOTER_ICON or discord.Embed.Empty)
+                                                                        ^^^^^^^^^^^^^^^^^^^
+AttributeError: type object 'Embed' has no attribute 'Empty'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Python314\Lib\site-packages\discord\app_commands\tree.py", line 1302, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 884, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 877, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'play' raised an exception: AttributeError: type object 'Embed' has no attribute 'Empty'
+08:23:43 [INFO    ] severus: Database ready.
+08:23:43 [INFO    ] severus:   OK  cogs.general.ping
+08:23:43 [INFO    ] severus:   OK  cogs.general.avatar
+08:23:43 [INFO    ] severus:   OK  cogs.general.uptime
+08:23:43 [INFO    ] severus:   OK  cogs.general.serverinfo
+08:23:43 [INFO    ] severus:   OK  cogs.general.userinfo
+08:23:43 [INFO    ] severus:   OK  cogs.general.snipe
+08:23:43 [INFO    ] severus:   OK  cogs.general.help
+08:23:43 [INFO    ] severus:   OK  cogs.general.reminders
+08:23:43 [INFO    ] severus:   OK  cogs.general.afk
+08:23:43 [INFO    ] severus:   OK  cogs.moderation.kick
+08:23:43 [INFO    ] severus:   OK  cogs.moderation.ban
+08:23:43 [INFO    ] severus:   OK  cogs.moderation.warn
+08:23:43 [INFO    ] severus:   OK  cogs.moderation.clear
+08:23:43 [INFO    ] severus:   OK  cogs.moderation.mute
+08:23:43 [INFO    ] severus:   OK  cogs.moderation.slowmode
+08:23:43 [INFO    ] severus:   OK  cogs.moderation.timeout
+08:23:43 [INFO    ] severus:   OK  cogs.moderation.notes
+08:23:43 [INFO    ] severus:   OK  cogs.moderation.thresholds
+08:23:43 [INFO    ] severus:   OK  cogs.roles.panels
+08:23:43 [INFO    ] severus:   OK  cogs.settings.config
+08:23:43 [INFO    ] severus:   OK  cogs.settings.aliases
+08:23:43 [INFO    ] severus:   OK  cogs.automod
+08:23:43 [INFO    ] severus:   OK  cogs.logging.logger
+08:23:43 [INFO    ] severus:   OK  cogs.temprooms.rooms
+08:23:43 [INFO    ] severus:   OK  cogs.temprooms.invite
+08:23:43 [INFO    ] severus:   OK  cogs.community.custom_commands
+08:23:43 [INFO    ] severus:   OK  cogs.community.autoroles
+08:23:43 [INFO    ] severus:   OK  cogs.community.polls
+08:23:43 [INFO    ] severus:   OK  cogs.community.starboard
+08:23:43 [INFO    ] severus:   OK  cogs.focus.timer
+08:23:43 [INFO    ] severus:   OK  cogs.focus.profile
+08:23:43 [INFO    ] severus:   OK  cogs.focus.pets
+08:23:44 [INFO    ] severus:   OK  cogs.music.player
+08:23:44 [INFO    ] severus:   OK  cogs.music.lyrics
+08:23:44 [INFO    ] severus:   OK  cogs.security.security
+08:23:44 [INFO    ] severus:   OK  cogs.owner
+08:23:44 [INFO    ] severus:   OK  cogs.ipc_bridge
+08:23:44 [INFO    ] severus: Restored 0 role panel view(s).
+08:23:44 [INFO    ] severus: VerifyView restored.
+08:23:44 [INFO    ] severus: Syncing slash commands with Discord...
+08:23:44 [INFO    ] severus: OK  Global sync complete: 86 command(s) registered.
+08:23:45 [INFO    ] severus: OK  Dev guild instant sync: 86 command(s).
+08:23:49 [INFO    ] severus: ====================================================
+08:23:49 [INFO    ] severus:   🤖  Logged in as mOoN#1384  (1317208885521813615)
+08:23:49 [INFO    ] severus:   📡  Connected to 1 guild(s)
+08:23:49 [INFO    ] severus: ====================================================
+08:24:03 [INFO    ] severus.ipc: IPC action: get_module_state (id=0b6999a8)
+08:24:09 [INFO    ] severus.ipc: IPC action: sync_commands (id=db8172b1)
+08:26:24 [INFO    ] severus: Database ready.
+08:26:24 [INFO    ] severus:   OK  cogs.general.ping
+08:26:24 [INFO    ] severus:   OK  cogs.general.avatar
+08:26:24 [INFO    ] severus:   OK  cogs.general.uptime
+08:26:24 [INFO    ] severus:   OK  cogs.general.serverinfo
+08:26:24 [INFO    ] severus:   OK  cogs.general.userinfo
+08:26:24 [INFO    ] severus:   OK  cogs.general.snipe
+08:26:24 [INFO    ] severus:   OK  cogs.general.help
+08:26:24 [INFO    ] severus:   OK  cogs.general.reminders
+08:26:24 [INFO    ] severus:   OK  cogs.general.afk
+08:26:24 [INFO    ] severus:   OK  cogs.moderation.kick
+08:26:24 [INFO    ] severus:   OK  cogs.moderation.ban
+08:26:24 [INFO    ] severus:   OK  cogs.moderation.warn
+08:26:24 [INFO    ] severus:   OK  cogs.moderation.clear
+08:26:24 [INFO    ] severus:   OK  cogs.moderation.mute
+08:26:24 [INFO    ] severus:   OK  cogs.moderation.slowmode
+08:26:24 [INFO    ] severus:   OK  cogs.moderation.timeout
+08:26:24 [INFO    ] severus:   OK  cogs.moderation.notes
+08:26:24 [INFO    ] severus:   OK  cogs.moderation.thresholds
+08:26:24 [INFO    ] severus:   OK  cogs.roles.panels
+08:26:24 [INFO    ] severus:   OK  cogs.settings.config
+08:26:24 [INFO    ] severus:   OK  cogs.settings.aliases
+08:26:24 [INFO    ] severus:   OK  cogs.automod
+08:26:24 [INFO    ] severus:   OK  cogs.logging.logger
+08:26:24 [INFO    ] severus:   OK  cogs.temprooms.rooms
+08:26:24 [INFO    ] severus:   OK  cogs.temprooms.invite
+08:26:24 [INFO    ] severus:   OK  cogs.community.custom_commands
+08:26:24 [INFO    ] severus:   OK  cogs.community.autoroles
+08:26:24 [INFO    ] severus:   OK  cogs.community.polls
+08:26:24 [INFO    ] severus:   OK  cogs.community.starboard
+08:26:24 [INFO    ] severus:   OK  cogs.focus.timer
+08:26:24 [INFO    ] severus:   OK  cogs.focus.profile
+08:26:24 [INFO    ] severus:   OK  cogs.focus.pets
+08:26:24 [INFO    ] severus:   OK  cogs.music.player
+08:26:24 [INFO    ] severus:   OK  cogs.music.lyrics
+08:26:24 [INFO    ] severus:   OK  cogs.security.security
+08:26:24 [INFO    ] severus:   OK  cogs.owner
+08:26:24 [INFO    ] severus:   OK  cogs.ipc_bridge
+08:26:24 [INFO    ] severus: Restored 0 role panel view(s).
+08:26:24 [INFO    ] severus: VerifyView restored.
+08:26:24 [INFO    ] severus: Skipping slash-command sync because application_id is not ready yet.
+08:28:47 [INFO    ] severus: Database ready.
+08:28:47 [INFO    ] severus:   OK  cogs.general.ping
+08:28:47 [INFO    ] severus:   OK  cogs.general.avatar
+08:28:47 [INFO    ] severus:   OK  cogs.general.uptime
+08:28:47 [INFO    ] severus:   OK  cogs.general.serverinfo
+08:28:47 [INFO    ] severus:   OK  cogs.general.userinfo
+08:28:47 [INFO    ] severus:   OK  cogs.general.snipe
+08:28:47 [INFO    ] severus:   OK  cogs.general.help
+08:28:47 [INFO    ] severus:   OK  cogs.general.reminders
+08:28:47 [INFO    ] severus:   OK  cogs.general.afk
+08:28:47 [INFO    ] severus:   OK  cogs.moderation.kick
+08:28:47 [INFO    ] severus:   OK  cogs.moderation.ban
+08:28:47 [INFO    ] severus:   OK  cogs.moderation.warn
+08:28:47 [INFO    ] severus:   OK  cogs.moderation.clear
+08:28:47 [INFO    ] severus:   OK  cogs.moderation.mute
+08:28:47 [INFO    ] severus:   OK  cogs.moderation.slowmode
+08:28:47 [INFO    ] severus:   OK  cogs.moderation.timeout
+08:28:47 [INFO    ] severus:   OK  cogs.moderation.notes
+08:28:47 [INFO    ] severus:   OK  cogs.moderation.thresholds
+08:28:47 [INFO    ] severus:   OK  cogs.roles.panels
+08:28:47 [INFO    ] severus:   OK  cogs.settings.config
+08:28:47 [INFO    ] severus:   OK  cogs.settings.aliases
+08:28:47 [INFO    ] severus:   OK  cogs.automod
+08:28:47 [INFO    ] severus:   OK  cogs.logging.logger
+08:28:47 [INFO    ] severus:   OK  cogs.temprooms.rooms
+08:28:47 [INFO    ] severus:   OK  cogs.temprooms.invite
+08:28:47 [INFO    ] severus:   OK  cogs.community.custom_commands
+08:28:47 [INFO    ] severus:   OK  cogs.community.autoroles
+08:28:47 [INFO    ] severus:   OK  cogs.community.polls
+08:28:47 [INFO    ] severus:   OK  cogs.community.starboard
+08:28:47 [INFO    ] severus:   OK  cogs.focus.timer
+08:28:47 [INFO    ] severus:   OK  cogs.focus.profile
+08:28:47 [INFO    ] severus:   OK  cogs.focus.pets
+08:28:48 [INFO    ] severus:   OK  cogs.music.player
+08:28:48 [INFO    ] severus:   OK  cogs.music.lyrics
+08:28:48 [INFO    ] severus:   OK  cogs.security.security
+08:28:48 [INFO    ] severus:   OK  cogs.owner
+08:28:48 [INFO    ] severus:   OK  cogs.ipc_bridge
+08:28:48 [INFO    ] severus: Restored 0 role panel view(s).
+08:28:48 [INFO    ] severus: VerifyView restored.
+08:28:48 [INFO    ] severus: Skipping slash-command sync because application_id is not ready yet.
+08:29:32 [INFO    ] severus: Database ready.
+08:29:32 [INFO    ] severus:   OK  cogs.general.ping
+08:29:32 [INFO    ] severus:   OK  cogs.general.avatar
+08:29:32 [INFO    ] severus:   OK  cogs.general.uptime
+08:29:32 [INFO    ] severus:   OK  cogs.general.serverinfo
+08:29:32 [INFO    ] severus:   OK  cogs.general.userinfo
+08:29:32 [INFO    ] severus:   OK  cogs.general.snipe
+08:29:32 [INFO    ] severus:   OK  cogs.general.help
+08:29:32 [INFO    ] severus:   OK  cogs.general.reminders
+08:29:32 [INFO    ] severus:   OK  cogs.general.afk
+08:29:32 [INFO    ] severus:   OK  cogs.moderation.kick
+08:29:32 [INFO    ] severus:   OK  cogs.moderation.ban
+08:29:32 [INFO    ] severus:   OK  cogs.moderation.warn
+08:29:32 [INFO    ] severus:   OK  cogs.moderation.clear
+08:29:32 [INFO    ] severus:   OK  cogs.moderation.mute
+08:29:32 [INFO    ] severus:   OK  cogs.moderation.slowmode
+08:29:32 [INFO    ] severus:   OK  cogs.moderation.timeout
+08:29:32 [INFO    ] severus:   OK  cogs.moderation.notes
+08:29:32 [INFO    ] severus:   OK  cogs.moderation.thresholds
+08:29:32 [INFO    ] severus:   OK  cogs.roles.panels
+08:29:32 [INFO    ] severus:   OK  cogs.settings.config
+08:29:32 [INFO    ] severus:   OK  cogs.settings.aliases
+08:29:32 [INFO    ] severus:   OK  cogs.automod
+08:29:32 [INFO    ] severus:   OK  cogs.logging.logger
+08:29:32 [INFO    ] severus:   OK  cogs.temprooms.rooms
+08:29:32 [INFO    ] severus:   OK  cogs.temprooms.invite
+08:29:32 [INFO    ] severus:   OK  cogs.community.custom_commands
+08:29:32 [INFO    ] severus:   OK  cogs.community.autoroles
+08:29:32 [INFO    ] severus:   OK  cogs.community.polls
+08:29:32 [INFO    ] severus:   OK  cogs.community.starboard
+08:29:32 [INFO    ] severus:   OK  cogs.focus.timer
+08:29:32 [INFO    ] severus:   OK  cogs.focus.profile
+08:29:32 [INFO    ] severus:   OK  cogs.focus.pets
+08:29:33 [INFO    ] severus:   OK  cogs.music.player
+08:29:33 [INFO    ] severus:   OK  cogs.music.lyrics
+08:29:33 [INFO    ] severus:   OK  cogs.security.security
+08:29:33 [INFO    ] severus:   OK  cogs.owner
+08:29:33 [INFO    ] severus:   OK  cogs.ipc_bridge
+08:29:33 [INFO    ] severus: Restored 0 role panel view(s).
+08:29:33 [INFO    ] severus: VerifyView restored.
+08:29:33 [INFO    ] severus: Skipping slash-command sync because application_id is not ready yet.
+00:05:08 [INFO    ] severus: Database ready.
+00:05:08 [INFO    ] severus:   OK  cogs.general.ping
+00:05:08 [INFO    ] severus:   OK  cogs.general.avatar
+00:05:08 [INFO    ] severus:   OK  cogs.general.uptime
+00:05:08 [INFO    ] severus:   OK  cogs.general.serverinfo
+00:05:08 [INFO    ] severus:   OK  cogs.general.userinfo
+00:05:08 [INFO    ] severus:   OK  cogs.general.snipe
+00:05:08 [INFO    ] severus:   OK  cogs.general.help
+00:05:08 [INFO    ] severus:   OK  cogs.general.reminders
+00:05:08 [INFO    ] severus:   OK  cogs.general.afk
+00:05:08 [INFO    ] severus:   OK  cogs.moderation.kick
+00:05:08 [INFO    ] severus:   OK  cogs.moderation.ban
+00:05:08 [INFO    ] severus:   OK  cogs.moderation.warn
+00:05:08 [INFO    ] severus:   OK  cogs.moderation.clear
+00:05:08 [INFO    ] severus:   OK  cogs.moderation.mute
+00:05:08 [INFO    ] severus:   OK  cogs.moderation.slowmode
+00:05:08 [INFO    ] severus:   OK  cogs.moderation.timeout
+00:05:08 [INFO    ] severus:   OK  cogs.moderation.notes
+00:05:08 [INFO    ] severus:   OK  cogs.moderation.thresholds
+00:05:08 [INFO    ] severus:   OK  cogs.roles.panels
+00:05:08 [INFO    ] severus:   OK  cogs.settings.config
+00:05:08 [INFO    ] severus:   OK  cogs.settings.aliases
+00:05:08 [INFO    ] severus:   OK  cogs.automod
+00:05:08 [INFO    ] severus:   OK  cogs.logging.logger
+00:05:08 [INFO    ] severus:   OK  cogs.temprooms.rooms
+00:05:08 [INFO    ] severus:   OK  cogs.temprooms.invite
+00:05:08 [INFO    ] severus:   OK  cogs.community.custom_commands
+00:05:08 [INFO    ] severus:   OK  cogs.community.autoroles
+00:05:08 [INFO    ] severus:   OK  cogs.community.polls
+00:05:08 [INFO    ] severus:   OK  cogs.community.starboard
+00:05:08 [INFO    ] severus:   OK  cogs.focus.timer
+00:05:08 [INFO    ] severus:   OK  cogs.focus.profile
+00:05:08 [INFO    ] severus:   OK  cogs.focus.pets
+00:05:08 [INFO    ] severus:   OK  cogs.music.player
+00:05:08 [INFO    ] severus:   OK  cogs.music.lyrics
+00:05:08 [INFO    ] severus:   OK  cogs.security.security
+00:05:08 [INFO    ] severus:   OK  cogs.owner
+00:05:08 [INFO    ] severus:   OK  cogs.ipc_bridge
+00:05:08 [INFO    ] severus: Restored 0 role panel view(s).
+00:05:08 [INFO    ] severus: VerifyView restored.
+00:05:08 [INFO    ] severus: Syncing slash commands with Discord...
+00:05:09 [INFO    ] severus: OK  Global sync complete: 86 command(s) registered.
+00:05:09 [INFO    ] severus: OK  Cleared dev guild-specific slash command overrides.
+00:05:12 [INFO    ] severus: ====================================================
+00:05:12 [INFO    ] severus:   🤖  Logged in as mOoN#1384  (1317208885521813615)
+00:05:12 [INFO    ] severus:   📡  Connected to 1 guild(s)
+00:05:12 [INFO    ] severus: ====================================================
+00:06:15 [ERROR   ] discord.app_commands.tree: Ignoring exception in command 'timer'
+Traceback (most recent call last):
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 858, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Enviroment\Projects\Sys - serervus\cogs\focus\timer.py", line 210, in timer
+    await interaction.response.send_message(embed=embed, file=file)
+  File "C:\Python314\Lib\site-packages\discord\interactions.py", line 1085, in send_message
+    data = await adapter.create_interaction_response(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "C:\Python314\Lib\site-packages\discord\webhook\async_.py", line 224, in request
+    raise NotFound(response, data)
+discord.errors.NotFound: 404 Not Found (error code: 10062): Unknown interaction
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Python314\Lib\site-packages\discord\app_commands\tree.py", line 1302, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 884, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\site-packages\discord\app_commands\commands.py", line 877, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'timer' raised an exception: NotFound: 404 Not Found (error code: 10062): Unknown interaction
+00:06:56 [INFO    ] Timer: SIDRA left Study Zone (4 remaining)
+00:06:56 [INFO    ] Timer: SIDRA joined Study Zone — tracking
+00:06:58 [INFO    ] Timer: SIDRA left Study Zone (4 remaining)
+00:06:59 [INFO    ] Timer: SIDRA joined Study Zone — tracking
+00:07:11 [INFO    ] discord.voice_state: Connecting to voice...
+00:07:11 [INFO    ] discord.voice_state: Starting voice handshake... (connection attempt 1)
+00:07:11 [INFO    ] discord.voice_state: Voice handshake complete. Endpoint found: c-mxp02-2a32e93b.discord.media:2096
+00:07:12 [INFO    ] discord.voice_state: Voice connection complete.
+00:07:45 [INFO    ] Timer: [Study Zone] min=1 +10xp +5c → 4
+00:07:51 [INFO    ] Timer: Ayaa left Study Zone (4 remaining)
+00:07:52 [INFO    ] Timer: Ayaa joined Study Zone — tracking
+00:08:00 [INFO    ] Timer: Ayaa left Study Zone (4 remaining)
+00:08:01 [INFO    ] Timer: Ayaa joined Study Zone — tracking
+00:08:10 [INFO    ] Timer: Ayaa left Study Zone (4 remaining)
+00:08:11 [INFO    ] Timer: Ayaa joined Study Zone — tracking
+00:08:14 [INFO    ] severus.ipc: IPC action: get_module_state (id=701f79b3)
+00:08:29 [INFO    ] Timer: Ayaa left Study Zone (4 remaining)
+00:08:30 [INFO    ] Timer: Ayaa joined Study Zone — tracking
+00:11:23 [INFO    ] discord.voice_state: The voice handshake is being terminated for Channel ID 1459513446331580678 (Guild ID 1104701279005069334)
+00:11:23 [INFO    ] discord.player: ffmpeg process 2568 has not terminated. Waiting to terminate...
+00:11:23 [INFO    ] discord.player: ffmpeg process 2568 should have terminated with a return code of 1.
+00:17:45 [INFO    ] severus: Database ready.
+00:17:45 [INFO    ] severus:   OK  cogs.general.ping
+00:17:45 [INFO    ] severus:   OK  cogs.general.avatar
+00:17:45 [INFO    ] severus:   OK  cogs.general.uptime
+00:17:45 [INFO    ] severus:   OK  cogs.general.serverinfo
+00:17:45 [INFO    ] severus:   OK  cogs.general.userinfo
+00:17:45 [INFO    ] severus:   OK  cogs.general.snipe
+00:17:45 [INFO    ] severus:   OK  cogs.general.help
+00:17:45 [INFO    ] severus:   OK  cogs.general.reminders
+00:17:45 [INFO    ] severus:   OK  cogs.general.afk
+00:17:45 [INFO    ] severus:   OK  cogs.moderation.kick
+00:17:45 [INFO    ] severus:   OK  cogs.moderation.ban
+00:17:45 [INFO    ] severus:   OK  cogs.moderation.warn
+00:17:45 [INFO    ] severus:   OK  cogs.moderation.clear
+00:17:45 [INFO    ] severus:   OK  cogs.moderation.mute
+00:17:45 [INFO    ] severus:   OK  cogs.moderation.slowmode
+00:17:45 [INFO    ] severus:   OK  cogs.moderation.timeout
+00:17:45 [INFO    ] severus:   OK  cogs.moderation.notes
+00:17:45 [INFO    ] severus:   OK  cogs.moderation.thresholds
+00:17:45 [INFO    ] severus:   OK  cogs.roles.panels
+00:17:45 [INFO    ] severus:   OK  cogs.settings.config
+00:17:45 [INFO    ] severus:   OK  cogs.settings.aliases
+00:17:45 [INFO    ] severus:   OK  cogs.automod
+00:17:45 [INFO    ] severus:   OK  cogs.logging.logger
+00:17:45 [INFO    ] severus:   OK  cogs.temprooms.rooms
+00:17:45 [INFO    ] severus:   OK  cogs.temprooms.invite
+00:17:45 [INFO    ] severus:   OK  cogs.community.custom_commands
+00:17:45 [INFO    ] severus:   OK  cogs.community.autoroles
+00:17:45 [INFO    ] severus:   OK  cogs.community.polls
+00:17:45 [INFO    ] severus:   OK  cogs.community.starboard
+00:17:46 [INFO    ] severus:   OK  cogs.focus.timer
+00:17:46 [INFO    ] severus:   OK  cogs.focus.profile
+00:17:46 [INFO    ] severus:   OK  cogs.focus.pets
+00:17:47 [INFO    ] severus:   OK  cogs.music.player
+00:17:47 [INFO    ] severus:   OK  cogs.music.lyrics
+00:17:47 [INFO    ] severus:   OK  cogs.security.security
+00:17:47 [INFO    ] severus:   OK  cogs.owner
+00:17:47 [INFO    ] severus:   OK  cogs.ipc_bridge
+00:17:47 [INFO    ] severus: Restored 0 role panel view(s).
+00:17:47 [INFO    ] severus: VerifyView restored.
+00:17:47 [INFO    ] severus: Syncing slash commands with Discord...
+00:17:48 [INFO    ] severus: OK  Global sync complete: 86 command(s) registered.
+00:17:48 [INFO    ] severus: OK  Cleared dev guild-specific slash command overrides.
+00:17:51 [INFO    ] severus: ====================================================
+00:17:51 [INFO    ] severus:   🤖  Logged in as mOoN#1384  (1317208885521813615)
+00:17:51 [INFO    ] severus:   📡  Connected to 1 guild(s)
+00:17:51 [INFO    ] severus: ====================================================
+00:17:54 [INFO    ] discord.voice_state: Connecting to voice...
+00:17:54 [INFO    ] discord.voice_state: Starting voice handshake... (connection attempt 1)
+00:17:55 [INFO    ] discord.voice_state: Voice handshake complete. Endpoint found: c-mxp02-2a32e93b.discord.media:2096
+00:17:56 [INFO    ] discord.voice_state: Voice connection complete.
+00:18:27 [INFO    ] discord.voice_state: The voice handshake is being terminated for Channel ID 1459513446331580678 (Guild ID 1104701279005069334)
+00:21:16 [INFO    ] severus: Database ready.
+00:21:16 [INFO    ] severus:   OK  cogs.general.ping
+00:21:16 [INFO    ] severus:   OK  cogs.general.avatar
+00:21:16 [INFO    ] severus:   OK  cogs.general.uptime
+00:21:16 [INFO    ] severus:   OK  cogs.general.serverinfo
+00:21:16 [INFO    ] severus:   OK  cogs.general.userinfo
+00:21:16 [INFO    ] severus:   OK  cogs.general.snipe
+00:21:16 [INFO    ] severus:   OK  cogs.general.help
+00:21:16 [INFO    ] severus:   OK  cogs.general.reminders
+00:21:16 [INFO    ] severus:   OK  cogs.general.afk
+00:21:16 [INFO    ] severus:   OK  cogs.moderation.kick
+00:21:16 [INFO    ] severus:   OK  cogs.moderation.ban
+00:21:16 [INFO    ] severus:   OK  cogs.moderation.warn
+00:21:16 [INFO    ] severus:   OK  cogs.moderation.clear
+00:21:16 [INFO    ] severus:   OK  cogs.moderation.mute
+00:21:16 [INFO    ] severus:   OK  cogs.moderation.slowmode
+00:21:16 [INFO    ] severus:   OK  cogs.moderation.timeout
+00:21:16 [INFO    ] severus:   OK  cogs.moderation.notes
+00:21:16 [INFO    ] severus:   OK  cogs.moderation.thresholds
+00:21:16 [INFO    ] severus:   OK  cogs.roles.panels
+00:21:16 [INFO    ] severus:   OK  cogs.settings.config
+00:21:16 [INFO    ] severus:   OK  cogs.settings.aliases
+00:21:16 [INFO    ] severus:   OK  cogs.automod
+00:21:16 [INFO    ] severus:   OK  cogs.logging.logger
+00:21:16 [INFO    ] severus:   OK  cogs.temprooms.rooms
+00:21:16 [INFO    ] severus:   OK  cogs.temprooms.invite
+00:21:16 [INFO    ] severus:   OK  cogs.community.custom_commands
+00:21:16 [INFO    ] severus:   OK  cogs.community.autoroles
+00:21:16 [INFO    ] severus:   OK  cogs.community.polls
+00:21:16 [INFO    ] severus:   OK  cogs.community.starboard
+00:21:16 [INFO    ] severus:   OK  cogs.focus.timer
+00:21:16 [INFO    ] severus:   OK  cogs.focus.profile
+00:21:16 [INFO    ] severus:   OK  cogs.focus.pets
+00:21:17 [INFO    ] severus:   OK  cogs.music.player
+00:21:17 [INFO    ] severus:   OK  cogs.music.lyrics
+00:21:17 [INFO    ] severus:   OK  cogs.security.security
+00:21:17 [INFO    ] severus:   OK  cogs.owner
+00:21:17 [INFO    ] severus:   OK  cogs.ipc_bridge
+00:21:17 [INFO    ] severus: Restored 0 role panel view(s).
+00:21:17 [INFO    ] severus: VerifyView restored.
+00:21:17 [INFO    ] severus: Skipping slash-command sync because application_id is not ready yet.

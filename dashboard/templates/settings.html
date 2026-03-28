@@ -12,9 +12,22 @@
 </div>
 
 <div class="g2">
+  <div class="card" style="border-color:rgba(122,112,255,.22)">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--x)"></span>Focus System</div>
+      <a href="{{ url_for('focus_dashboard', guild_id=guild_id) }}" class="btn btn-primary btn-xs">Open Focus Dashboard</a>
+    </div>
+    <div class="card-body">
+      <div class="kv-row"><span class="kv-key">XP per minute</span><span class="kv-val">{{ settings.get('focus_xp_per_min', 10) }}</span></div>
+      <div class="kv-row"><span class="kv-key">Coins per minute</span><span class="kv-val">{{ settings.get('focus_coins_per_min', 5) }}</span></div>
+      <div class="kv-row"><span class="kv-key">Max session</span><span class="kv-val">{{ settings.get('focus_max_session_min', 720) }} min</span></div>
+      <div class="kv-row"><span class="kv-key">Min VC members</span><span class="kv-val">{{ settings.get('focus_min_vc_members', 1) }}</span></div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-head">
-      <div class="card-title"><span class="ct-dot" style="background:var(--red)"></span>🛡 Moderation</div>
+      <div class="card-title"><span class="ct-dot" style="background:var(--red)"></span>Moderation</div>
     </div>
     <div class="card-body">
       <div class="form-group">
@@ -40,7 +53,7 @@
 
   <div class="card">
     <div class="card-head">
-      <div class="card-title"><span class="ct-dot" style="background:var(--green)"></span>👋 Welcome System</div>
+      <div class="card-title"><span class="ct-dot" style="background:var(--green)"></span>Welcome System</div>
     </div>
     <div class="card-body">
       <div class="form-group">
@@ -65,11 +78,10 @@
   </div>
 </div>
 
-<!-- WELCOME PREVIEW -->
 <div class="card" style="border-color:rgba(34,211,164,.2);background:linear-gradient(135deg,var(--layer) 0%,rgba(34,211,164,.03) 100%)">
   <div class="card-head">
-    <div class="card-title"><span class="ct-dot" style="background:var(--green);animation:pulse-dot 1.5s infinite"></span>👁 Welcome Message Preview</div>
-    <span style="font-size:11px;color:var(--t3);font-family:var(--mono)">Live — updates as you type</span>
+    <div class="card-title"><span class="ct-dot" style="background:var(--green);animation:pulse-dot 1.5s infinite"></span>Welcome Message Preview</div>
+    <span style="font-size:11px;color:var(--t3);font-family:var(--mono)">Live - updates as you type</span>
   </div>
   <div class="card-body">
     <div style="background:#36393f;border-radius:8px;padding:16px;max-width:540px">
@@ -83,7 +95,7 @@
           </div>
           <div style="border-left:4px solid #22d3a4;background:#2f3136;border-radius:4px;padding:12px 14px">
             <div style="color:#dcddde;font-size:14px;line-height:1.6" id="preview-text">
-              Welcome <span style="color:#5865F2;font-weight:600">@NewMember</span> to <strong style="color:#fff">Your Server</strong>! 🎉
+              Welcome <span style="color:#5865F2;font-weight:600">@NewMember</span> to <strong style="color:#fff">Your Server</strong>!
             </div>
           </div>
         </div>
@@ -91,58 +103,21 @@
     </div>
     <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--layer2);border:1px solid var(--b1);border-radius:6px">
-        <code style="font-size:10px">{user}</code><span style="font-size:11px;color:var(--t2)">→ @NewMember</span>
+        <code style="font-size:10px">{user}</code><span style="font-size:11px;color:var(--t2)">-> @NewMember</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--layer2);border:1px solid var(--b1);border-radius:6px">
-        <code style="font-size:10px">{server}</code><span style="font-size:11px;color:var(--t2)">→ Server Name</span>
+        <code style="font-size:10px">{server}</code><span style="font-size:11px;color:var(--t2)">-> Server Name</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--layer2);border:1px solid var(--b1);border-radius:6px">
-        <code style="font-size:10px">{count}</code><span style="font-size:11px;color:var(--t2)">→ 1,234th member</span>
+        <code style="font-size:10px">{count}</code><span style="font-size:11px;color:var(--t2)">-> 1,234th member</span>
       </div>
     </div>
   </div>
 </div>
 
-<!-- TICKET SYSTEM -->
 <div class="card">
   <div class="card-head">
-    <div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>🎫 Ticket System</div>
-    <span class="badge bmuted">Configure with /ticketsetup in Discord</span>
-  </div>
-  <div class="card-body">
-    <div class="g2">
-      <div class="form-group">
-        <label class="form-label">Ticket Category ID</label>
-        <input class="form-control" type="text" value="{{ ticket_settings.get('category_id','') or '' }}"
-               placeholder="Category ID for new ticket channels" data-field="category_id" data-guild="{{ guild_id }}" data-system="ticket">
-        <div style="display:flex;justify-content:space-between"><span class="form-hint">New ticket channels are created here.</span><span class="save-ind"><span></span></span></div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Ticket Log Channel ID</label>
-        <input class="form-control" type="text" value="{{ ticket_settings.get('log_channel','') or '' }}"
-               placeholder="Channel ID for ticket transcripts" data-field="log_channel" data-guild="{{ guild_id }}" data-system="ticket">
-        <div style="display:flex;justify-content:space-between"><span class="form-hint">Closed ticket transcripts sent here.</span><span class="save-ind"><span></span></span></div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Support Role ID</label>
-        <input class="form-control" type="text" value="{{ ticket_settings.get('support_role','') or '' }}"
-               placeholder="Role ID with ticket access" data-field="support_role" data-guild="{{ guild_id }}" data-system="ticket">
-        <div style="display:flex;justify-content:space-between"><span class="form-hint">Members with this role can see tickets.</span><span class="save-ind"><span></span></span></div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Max Open Tickets per User</label>
-        <input class="form-control" type="number" min="1" max="5" value="{{ ticket_settings.get('max_open',1) }}"
-               data-field="max_open" data-guild="{{ guild_id }}" data-system="ticket">
-        <div style="display:flex;justify-content:space-between"><span class="form-hint">How many open tickets per user (1–5).</span><span class="save-ind"><span></span></span></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- BOT PRESENCE -->
-<div class="card">
-  <div class="card-head">
-    <div class="card-title"><span class="ct-dot" style="background:var(--x)"></span>⚡ Bot Presence</div>
+    <div class="card-title"><span class="ct-dot" style="background:var(--x)"></span>Bot Presence</div>
     <span style="font-size:11px;color:var(--t3);font-family:var(--mono)">IPC bridge required for live apply</span>
   </div>
   <div class="card-body">
@@ -158,27 +133,26 @@
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Status Text</label>
         <input class="form-control" type="text" value="{{ settings.get('bot_status','') or '' }}"
-               placeholder="your server 👀" data-field="bot_status" data-guild="{{ guild_id }}" id="status-text-input">
+               placeholder="your server" data-field="bot_status" data-guild="{{ guild_id }}" id="status-text-input">
       </div>
     </div>
     <div style="margin-top:12px;padding:10px 14px;background:var(--layer2);border:1px solid var(--b1);border-radius:var(--r);display:flex;align-items:center;gap:10px">
       <div style="width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);flex-shrink:0"></div>
       <span style="font-size:13px;color:var(--t2)">
         <span id="status-preview-type" style="color:var(--t3)">Watching </span>
-        <span id="status-preview-text" style="color:var(--t1);font-weight:600">your server 👀</span>
+        <span id="status-preview-text" style="color:var(--t1);font-weight:600">your server</span>
       </span>
     </div>
     <div style="margin-top:10px;display:flex;gap:8px">
-      <button class="btn btn-primary btn-sm" onclick="applyStatusLive()">⚡ Apply via IPC</button>
+      <button class="btn btn-primary btn-sm" onclick="applyStatusLive()">Apply via IPC</button>
       <span style="font-size:11px;color:var(--t3);align-self:center;font-family:var(--mono)">Queues command to the bot (~2s delay)</span>
     </div>
   </div>
 </div>
 
-<!-- LOGGING CHANNELS -->
 <div class="card">
   <div class="card-head">
-    <div class="card-title"><span class="ct-dot" style="background:var(--blue)"></span>📋 Logging Channels</div>
+    <div class="card-title"><span class="ct-dot" style="background:var(--blue)"></span>Logging Channels</div>
     <span style="font-size:11px;color:var(--t3)">Leave blank to disable that event type.</span>
   </div>
   <div class="card-body">
@@ -200,26 +174,24 @@
 <script>
 const GUILD_NAME = {{ guild.get('name','Server') | tojson }};
 
-/* ── Welcome preview ── */
 function renderPreview() {
-  const msg = document.getElementById('welcome-msg-input').value || 'Welcome {user} to **{server}**! 🎉';
+  const msg = document.getElementById('welcome-msg-input').value || 'Welcome {user} to **{server}**!';
   let rendered = msg
-    .replace(/\{user\}/g,   '<span style="color:#5865F2;font-weight:600">@NewMember</span>')
+    .replace(/\{user\}/g, '<span style="color:#5865F2;font-weight:600">@NewMember</span>')
     .replace(/\{server\}/g, '<strong style="color:#fff">' + GUILD_NAME + '</strong>')
-    .replace(/\{count\}/g,  '<strong style="color:#fff">1,234</strong>')
+    .replace(/\{count\}/g, '<strong style="color:#fff">1,234</strong>')
     .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#fff">$1</strong>')
-    .replace(/\*(.+?)\*/g,     '<em>$1</em>');
+    .replace(/\*(.+?)\*/g, '<em>$1</em>');
   document.getElementById('preview-text').innerHTML = rendered;
   const now = new Date();
-  document.getElementById('preview-time').textContent = 'Today at ' + now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('preview-time').textContent = 'Today at ' + now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
 }
 renderPreview();
 document.getElementById('welcome-msg-input').addEventListener('input', renderPreview);
 
-/* ── Status preview ── */
 function updateStatusPreview() {
   const type = document.getElementById('status-type-select')?.value || 'watching';
-  const text = document.getElementById('status-text-input')?.value || 'your server 👀';
+  const text = document.getElementById('status-text-input')?.value || 'your server';
   const el1 = document.getElementById('status-preview-type');
   const el2 = document.getElementById('status-preview-text');
   if (el1) el1.textContent = type.charAt(0).toUpperCase() + type.slice(1) + ' ';
@@ -229,14 +201,13 @@ document.getElementById('status-type-select')?.addEventListener('change', update
 document.getElementById('status-text-input')?.addEventListener('input', updateStatusPreview);
 updateStatusPreview();
 
-/* ── Apply status via IPC ── */
 async function applyStatusLive() {
   const type = document.getElementById('status-type-select')?.value;
   const text = document.getElementById('status-text-input')?.value;
   if (!text) { toast('Enter a status text first', 'err'); return; }
   const r = await apiPost('/api/ipc/command', { action: 'set_status', params: { type, text } });
-  if (r.ok) toast('Status command queued — bot will update in ~2s');
-  else      toast(r.error || 'IPC not available (bot offline?)', 'info');
+  if (r.ok) toast('Status command queued - bot will update in ~2s');
+  else toast(r.error || 'IPC not available (bot offline?)', 'info');
 }
 </script>
 {% endblock %}

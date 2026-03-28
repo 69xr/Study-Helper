@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Focus{% endblock %}
+{% block page_title %}FOCUS{% endblock %}
+{% block breadcrumb %}{{ guild.get('name','') }} · Focus System{% endblock %}
+
+{% block content %}
+<div class="ph">
+  <div class="ph-left">
+    <h1>Focus System</h1>
+    <p>Timer Bot settings now live here. Changes save instantly and apply to new sessions.</p>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--x)"></span>Rewards</div>
+    </div>
+    <div class="card-body">
+      <div class="form-group">
+        <label class="form-label">XP Per Minute</label>
+        <input class="form-control focus-field" type="number" min="1" max="1000" value="{{ settings.get('focus_xp_per_min', 10) }}" data-field="focus_xp_per_min">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Coins Per Minute</label>
+        <input class="form-control focus-field" type="number" min="1" max="1000" value="{{ settings.get('focus_coins_per_min', 5) }}" data-field="focus_coins_per_min">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Reward Multiplier</label>
+        <input class="form-control focus-field" type="number" min="0.1" max="10" step="0.05" value="{{ settings.get('focus_bonus_multiplier', 1.0) }}" data-field="focus_bonus_multiplier">
+        <span class="form-hint">Applied to XP and coin rewards during focus sessions.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="ct-dot" style="background:var(--green)"></span>Session Rules</div>
+    </div>
+    <div class="card-body">
+      <div class="form-group">
+        <label class="form-label">Max Session Minutes</label>
+        <input class="form-control focus-field" type="number" min="5" max="720" value="{{ settings.get('focus_max_session_min', 720) }}" data-field="focus_max_session_min">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Minimum VC Members</label>
+        <input class="form-control focus-field" type="number" min="1" max="25" value="{{ settings.get('focus_min_vc_members', 1) }}" data-field="focus_min_vc_members">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Required Role ID</label>
+        <input class="form-control focus-field" type="text" value="{{ settings.get('focus_allowed_role_id', '') or '' }}" placeholder="Leave blank for everyone" data-field="focus_allowed_role_id">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Log Channel ID</label>
+        <input class="form-control focus-field" type="text" value="{{ settings.get('focus_log_channel_id', '') or '' }}" placeholder="Leave blank to disable logs" data-field="focus_log_channel_id">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>Blocked Voice Channels</div>
+    <span class="badge bmuted">{{ blocked|length }} blocked</span>
+  </div>
+  <div class="card-body">
+    <div class="form-row" style="align-items:end">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Channel ID</label>
+        <input id="blocked-channel-id" class="form-control" type="text" placeholder="Paste voice channel ID">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <button class="btn btn-primary" onclick="addBlockedChannel()">Add Block</button>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      {% if blocked %}
+        {% for row in blocked %}
+        <div class="kv-row">
+          <span class="kv-key"><code>{{ row.channel_id }}</code></span>
+          <button class="btn btn-danger btn-xs" onclick="removeBlockedChannel('{{ row.channel_id }}')">Remove</button>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty" style="padding:26px 12px">
+          <div class="empty-title">No blocked channels</div>
+          <div class="empty-sub">Any voice channel can run `/timer` right now.</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const GUILD_ID = {{ guild_id | tojson }};
+
+document.querySelectorAll('.focus-field').forEach((el) => {
+  el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', debounce(async () => {
+    const field = el.dataset.field;
+    const value = el.value;
+    const r = await apiPost(`/dashboard/${GUILD_ID}/focus/settings/save`, { [field]: value });
+    if (r.ok) toast('Saved');
+    else toast(r.error || 'Save failed', 'err');
+  }, 500));
+});
+
+async function addBlockedChannel() {
+  const input = document.getElementById('blocked-channel-id');
+  const channelId = input.value.trim();
+  if (!channelId) {
+    toast('Enter a channel ID first', 'warn');
+    return;
+  }
+  const r = await apiPost(`/dashboard/${GUILD_ID}/focus/blocked/add`, { channel_id: channelId });
+  if (!r.ok) {
+    toast(r.error || 'Could not add channel', 'err');
+    return;
+  }
+  location.reload();
+}
+
+async function removeBlockedChannel(channelId) {
+  const r = await apiPost(`/dashboard/${GUILD_ID}/focus/blocked/remove/${channelId}`);
+  if (!r.ok) {
+    toast(r.error || 'Could not remove channel', 'err');
+    return;
+  }
+  location.reload();
+}
+</script>
+{% endblock %}

@@ -1,12 +1,13 @@
 """
 cogs/music/player.py
-Godman music system — YouTube search, Spotify→YouTube resolution,
-playlists, full button controls, volume, loop, shuffle, queue pagination.
+Improved music system with source-aware resolution for YouTube, Spotify,
+and SoundCloud plus more reliable playback startup.
 """
 import discord, asyncio, re, random, time
 from discord import app_commands
 from discord.ext import commands
 from collections import deque
+from urllib.parse import urlparse
 import config
 from utils.helpers import music_embed, error_embed, success_embed
 
@@ -56,6 +57,7 @@ RE_SPOTIFY_TRACK    = re.compile(r"open\.spotify\.com/track/([A-Za-z0-9]+)")
 RE_SPOTIFY_PLAYLIST = re.compile(r"open\.spotify\.com/playlist/([A-Za-z0-9]+)")
 RE_SPOTIFY_ALBUM    = re.compile(r"open\.spotify\.com/album/([A-Za-z0-9]+)")
 RE_YT_URL           = re.compile(r"(youtube\.com|youtu\.be)")
+RE_SOUNDCLOUD_URL   = re.compile(r"(soundcloud\.com|snd\.sc)")
 
 
 def fmt_time(seconds) -> str:
@@ -79,11 +81,12 @@ def source_emoji(extractor: str) -> str:
 
 
 class Track:
-    __slots__ = ("url", "stream", "title", "artist",
-                 "duration", "thumbnail", "requester", "extractor")
+    __slots__ = ("url", "page_url", "stream", "title", "artist",
+                 "duration", "thumbnail", "requester", "extractor", "search_query")
 
-    def __init__(self, data: dict, requester: discord.Member):
-        self.url       = data.get("webpage_url") or data.get("url", "")
+    def __init__(self, data: dict, requester: discord.Member, search_query: str = ""):
+        self.page_url  = data.get("webpage_url") or data.get("original_url") or ""
+        self.url       = self.page_url or data.get("url", "")
         self.stream    = data.get("url", "")
         self.title     = data.get("title") or "Unknown Title"
         self.artist    = (data.get("uploader") or data.get("artist") or
@@ -92,6 +95,7 @@ class Track:
         self.thumbnail = data.get("thumbnail") or ""
         self.requester = requester
         self.extractor = data.get("extractor_key") or data.get("extractor") or "YouTube"
+        self.search_query = search_query
 
     @property
     def duration_str(self) -> str:
@@ -320,6 +324,25 @@ class Music(commands.Cog):
             self.states[guild_id] = MusicState()
         return self.states[guild_id]
 
+    def _looks_like_url(self, query: str) -> bool:
+        try:
+            parsed = urlparse(query)
+        except Exception:
+            return False
+        return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+    def _search_query_for_source(self, query: str) -> str:
+        query = query.strip()
+        if query.lower().startswith("sc:"):
+            return f"scsearch1:{query[3:].strip()}"
+        if query.lower().startswith("yt:"):
+            return f"ytsearch1:{query[3:].strip()}"
+        if RE_SOUNDCLOUD_URL.search(query):
+            return query
+        if self._looks_like_url(query):
+            return query
+        return f"ytsearch1:{query}"
+
     # ── Spotify helpers ────────────────────────────────────
     def _spotify_track_query(self, url: str) -> str:
         try:
@@ -329,10 +352,10 @@ class Music(commands.Cog):
                     title  = info.get("title", "")
                     artist = info.get("artist") or info.get("uploader") or ""
                     if title:
-                        return f"ytsearch:{artist} {title}".strip()
+                        return f"ytsearch1:{artist} {title}".strip()
         except Exception:
             pass
-        return f"ytsearch:{url}"
+        return f"ytsearch1:{url}"
 
     def _spotify_playlist_queries(self, url: str) -> list[str]:
         queries = []
@@ -363,20 +386,30 @@ class Music(commands.Cog):
 
         if RE_SPOTIFY_PLAYLIST.search(query) or RE_SPOTIFY_ALBUM.search(query):
             queries = await loop.run_in_executor(None, self._spotify_playlist_queries, query)
-            tracks  = []
-            for q in queries:
-                res = await loop.run_in_executor(None, self._fetch_single, q, requester)
-                if isinstance(res, list):
-                    tracks.extend(res)
-            return tracks
+            return await self._fetch_many_queries(queries, requester)
 
-        if RE_YT_URL.search(query) and "list=" in query:
+        if (RE_YT_URL.search(query) and "list=" in query) or (RE_SOUNDCLOUD_URL.search(query) and "/sets/" in query):
             return await loop.run_in_executor(None, self._fetch_playlist, query, requester)
 
-        if not RE_YT_URL.search(query):
-            query = f"ytsearch:{query}"
-
+        query = self._search_query_for_source(query)
         return await loop.run_in_executor(None, self._fetch_single, query, requester)
+
+    async def _fetch_many_queries(self, queries: list[str], requester: discord.Member) -> list[Track]:
+        if not queries:
+            return []
+
+        sem = asyncio.Semaphore(5)
+
+        async def runner(q: str):
+            async with sem:
+                return await asyncio.get_event_loop().run_in_executor(None, self._fetch_single, q, requester)
+
+        results = await asyncio.gather(*(runner(q) for q in queries[:config.MAX_QUEUE_SIZE]), return_exceptions=True)
+        tracks: list[Track] = []
+        for res in results:
+            if isinstance(res, list):
+                tracks.extend(res)
+        return tracks
 
     def _fetch_single(self, query: str, requester: discord.Member) -> list[Track] | str:
         try:
@@ -392,7 +425,7 @@ class Music(commands.Cog):
                     if url:
                         try: info = ydl.extract_info(url, download=False) or info
                         except Exception: pass
-                return [Track(info, requester)]
+                return [Track(info, requester, search_query=query)]
         except Exception as e:
             if "drm" in str(e).lower(): return "drm"
             return []
@@ -410,12 +443,38 @@ class Music(commands.Cog):
                         eurl = entry.get("webpage_url") or entry.get("url", "")
                         if not eurl: continue
                         full = ydl.extract_info(eurl, download=False)
-                        if full: tracks.append(Track(full, requester))
+                        if full: tracks.append(Track(full, requester, search_query=eurl))
                     except Exception:
                         continue
         except Exception:
             pass
         return tracks
+
+    def _refresh_track_stream(self, track: Track) -> str | None:
+        query = track.page_url or track.url or track.search_query
+        if not query:
+            return track.stream or None
+        try:
+            with yt_dlp.YoutubeDL(YDL_SINGLE) as ydl:
+                info = ydl.extract_info(query, download=False)
+                if info and "entries" in info:
+                    entries = [e for e in info["entries"] if e]
+                    if entries:
+                        info = entries[0]
+                if not info:
+                    return None
+                track.page_url = info.get("webpage_url") or track.page_url
+                track.url = track.page_url or track.url
+                track.stream = info.get("url") or track.stream
+                track.title = info.get("title") or track.title
+                track.artist = info.get("uploader") or info.get("artist") or info.get("channel") or track.artist
+                track.duration = info.get("duration") or track.duration
+                track.thumbnail = info.get("thumbnail") or track.thumbnail
+                track.extractor = info.get("extractor_key") or info.get("extractor") or track.extractor
+                return track.stream or None
+        except Exception:
+            return track.stream or None
+        return None
 
     # ── Playback engine ────────────────────────────────────
     async def play_next(self, guild_id: int):
@@ -446,6 +505,9 @@ class Music(commands.Cog):
         state.reset_timing()
 
         try:
+            refreshed = await asyncio.get_event_loop().run_in_executor(None, self._refresh_track_stream, track)
+            if refreshed:
+                track.stream = refreshed
             src = discord.FFmpegPCMAudio(
                 track.stream, executable=config.FFMPEG_PATH, **FFMPEG_OPTS)
             src = discord.PCMVolumeTransformer(src, volume=state.volume)
@@ -545,8 +607,8 @@ class Music(commands.Cog):
 
     # ── Slash commands ─────────────────────────────────────
     @app_commands.command(name="play",
-        description="Play a song — YouTube search, YouTube URL, or Spotify link.")
-    @app_commands.describe(query="Song name, YouTube URL/playlist, or Spotify track/playlist")
+        description="Queue music from search, YouTube, Spotify, or SoundCloud.")
+    @app_commands.describe(query="Song name, YouTube URL, Spotify link, SoundCloud link, or sc:/yt: search")
     async def play(self, interaction: discord.Interaction, query: str):
         if not NACL_AVAILABLE:
             return await interaction.response.send_message(
@@ -566,9 +628,16 @@ class Music(commands.Cog):
         is_spotify  = bool(RE_SPOTIFY_TRACK.search(query) or
                            RE_SPOTIFY_PLAYLIST.search(query) or
                            RE_SPOTIFY_ALBUM.search(query))
-        is_playlist = "list=" in query or RE_SPOTIFY_PLAYLIST.search(query) or RE_SPOTIFY_ALBUM.search(query)
+        is_soundcloud = bool(RE_SOUNDCLOUD_URL.search(query) or query.lower().startswith("sc:"))
+        is_playlist = (
+            "list=" in query
+            or RE_SPOTIFY_PLAYLIST.search(query)
+            or RE_SPOTIFY_ALBUM.search(query)
+            or (RE_SOUNDCLOUD_URL.search(query) and "/sets/" in query)
+        )
 
         hint = ("🟢 Resolving Spotify → YouTube…" if is_spotify
+                else "🟠 Resolving SoundCloud source…" if is_soundcloud
                 else "📋 Loading playlist…" if is_playlist
                 else f"🔍 Searching for `{query}`…")
         loading = await interaction.followup.send(embed=music_embed("⏳ Please wait", hint))
@@ -584,7 +653,8 @@ class Music(commands.Cog):
             return await loading.edit(embed=error_embed("Not Found",
                 f"Couldn't find anything for:\n`{query}`\n\n"
                 "• Check the URL is public\n"
-                "• Try a plain search: `Artist Song Title`"))
+                "• Try a plain search: `Artist Song Title`\n"
+                "• For SoundCloud search use `sc: artist track`"))
 
         for t in tracks:
             state.queue.append(t)
@@ -634,7 +704,7 @@ class Music(commands.Cog):
         await interaction.response.send_message(
             embed=success_embed("⏭️ Skipped", f"Skipped **{title}**."))
 
-    @app_commands.command(name="stop", description="Stop music and disconnect.")
+    @app_commands.command(name="stop", description="Stop playback, clear the queue, and disconnect.")
     async def stop(self, interaction: discord.Interaction):
         state = self.get_state(interaction.guild_id)
         if not state.vc:
@@ -650,13 +720,13 @@ class Music(commands.Cog):
         await interaction.response.send_message(
             embed=success_embed("⏹️ Stopped", "Disconnected and cleared the queue."))
 
-    @app_commands.command(name="queue", description="Show the music queue.")
+    @app_commands.command(name="queue", description="Show the current music queue.")
     async def queue_cmd(self, interaction: discord.Interaction):
         state = self.get_state(interaction.guild_id)
         await interaction.response.send_message(
             embed=_build_queue_embed(state, interaction.guild))
 
-    @app_commands.command(name="nowplaying", description="Show what's currently playing.")
+    @app_commands.command(name="nowplaying", description="Show the track that is playing right now.")
     async def nowplaying(self, interaction: discord.Interaction):
         state = self.get_state(interaction.guild_id)
         if not state.current:
@@ -676,7 +746,7 @@ class Music(commands.Cog):
         embed.set_footer(text=config.FOOTER_TEXT)
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(name="volume", description="Set volume (0–150%).")
+    @app_commands.command(name="volume", description="Set playback volume from 0 to 150 percent.")
     @app_commands.describe(level="Volume 0–150")
     async def volume(self, interaction: discord.Interaction,
                      level: app_commands.Range[int, 0, 150] = 50):
@@ -686,7 +756,7 @@ class Music(commands.Cog):
         await interaction.response.send_message(
             embed=success_embed("🔊 Volume", f"Set to **{level}%**"), ephemeral=True)
 
-    @app_commands.command(name="loop", description="Set loop mode.")
+    @app_commands.command(name="loop", description="Choose track loop, queue loop, or loop off.")
     @app_commands.choices(mode=[
         app_commands.Choice(name="Track",  value="track"),
         app_commands.Choice(name="Queue",  value="queue"),
@@ -700,7 +770,7 @@ class Music(commands.Cog):
         await interaction.response.send_message(
             embed=success_embed(labels[mode]), ephemeral=True)
 
-    @app_commands.command(name="shuffle", description="Toggle shuffle mode.")
+    @app_commands.command(name="shuffle", description="Toggle shuffle for the queued tracks.")
     async def shuffle_cmd(self, interaction: discord.Interaction):
         state = self.get_state(interaction.guild_id)
         state.shuffle = not state.shuffle
@@ -711,7 +781,7 @@ class Music(commands.Cog):
                 "Enabled ✅ — queue randomised." if state.shuffle else "Disabled ❌"),
             ephemeral=True)
 
-    @app_commands.command(name="remove", description="Remove a track from the queue.")
+    @app_commands.command(name="remove", description="Remove one queued track by position.")
     @app_commands.describe(position="Position in queue (1 = next up)")
     async def remove(self, interaction: discord.Interaction,
                      position: app_commands.Range[int, 1, 500]):
@@ -726,14 +796,14 @@ class Music(commands.Cog):
             embed=success_embed("🗑️ Removed",
                 f"Removed **{removed.title}** from position {position}."), ephemeral=True)
 
-    @app_commands.command(name="clearqueue", description="Clear the queue (keeps current track).")
+    @app_commands.command(name="clearqueue", description="Clear the queue while keeping the current track.")
     async def clear(self, interaction: discord.Interaction):
         state = self.get_state(interaction.guild_id)
         count = len(state.queue); state.queue.clear()
         await interaction.response.send_message(
             embed=success_embed("🗑️ Cleared", f"Removed **{count}** tracks."), ephemeral=True)
 
-    @app_commands.command(name="join", description="Join your voice channel.")
+    @app_commands.command(name="join", description="Join your current voice channel.")
     async def join(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         vc = await self._connect(interaction)
@@ -742,7 +812,7 @@ class Music(commands.Cog):
                 embed=success_embed("🎵 Joined", f"Connected to **{vc.channel.name}**."),
                 ephemeral=True)
 
-    @app_commands.command(name="leave", description="Leave the voice channel.")
+    @app_commands.command(name="leave", description="Leave the active voice channel.")
     async def leave(self, interaction: discord.Interaction):
         state = self.get_state(interaction.guild_id)
         if not state.vc:

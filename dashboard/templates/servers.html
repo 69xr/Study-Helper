@@ -3,56 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Select Server — Severus</title>
+<title>Select Server - {{ brand.name }}</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Outfit:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--base:#080b12;--layer:#10141f;--layer2:#151929;--layer3:#1a1f31;--b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.10);--b3:rgba(255,255,255,.15);--x:#6366f1;--x2:#818cf8;--xd:rgba(99,102,241,.12);--green:#22d3a4;--gd:rgba(34,211,164,.1);--t1:#f0f2ff;--t2:#8b92b8;--t3:#4a5175;--mono:'IBM Plex Mono',monospace;--head:'Outfit',sans-serif;--body:'DM Sans',sans-serif;--r:10px;}
 *{box-sizing:border-box;margin:0;padding:0}html,body{background:var(--base);color:var(--t1);font-family:var(--body);min-height:100vh}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(var(--b1) 1px,transparent 1px),linear-gradient(90deg,var(--b1) 1px,transparent 1px);background-size:40px 40px;}
 a{text-decoration:none;color:inherit}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--layer3);border-radius:99px}
-
 .topnav{padding:0 32px;height:56px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;background:rgba(8,11,18,.9);backdrop-filter:blur(20px);position:sticky;top:0;z-index:50}
 .nav-logo{display:flex;align-items:center;gap:10px}.nav-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--x),#a78bfa);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:15px;font-weight:900;color:#fff}
 .nav-name{font-family:var(--head);font-size:15px;font-weight:800;letter-spacing:-.3px}
 .user-pill{display:flex;align-items:center;gap:9px;background:var(--layer);border:1px solid var(--b1);padding:6px 14px;border-radius:99px}
 .user-pill img{width:24px;height:24px;border-radius:50%}.user-pill span{font-size:13px;font-weight:600}
 .logout{color:var(--t3);font-size:12px;margin-left:6px;transition:color .15s;font-family:var(--mono)}.logout:hover{color:#f43f5e}
-
-.page{max-width:960px;margin:0 auto;padding:44px 24px;position:relative;z-index:1}
-.page-head{margin-bottom:36px}.page-head h1{font-family:var(--head);font-size:26px;font-weight:900;letter-spacing:-.5px}
-.page-head p{font-size:14px;color:var(--t2);margin-top:4px}
-
+.page{max-width:1040px;margin:0 auto;padding:44px 24px;position:relative;z-index:1}
+.page-head{margin-bottom:36px}.page-head h1{font-family:var(--head);font-size:32px;font-weight:900;letter-spacing:-.8px}
+.page-head p{font-size:14px;color:var(--t2);margin-top:6px;max-width:640px}
 .section{margin-bottom:36px}.section-label{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:2px;color:var(--t3);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .section-label::after{content:'';flex:1;height:1px;background:var(--b1)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:14px}
-
-.server-card{background:var(--layer);border:1px solid var(--b1);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden}
-.server-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(99,102,241,.3),transparent);opacity:0;transition:opacity .2s}
-.server-card:hover{border-color:var(--x);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4)}
-.server-card:hover::before{opacity:1}
-.server-card.inactive{opacity:.55}.server-card.inactive:hover{border-color:var(--b1);transform:none;box-shadow:none}
-
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(288px,1fr));gap:14px}
+.server-card{background:var(--layer);border:1px solid var(--b1);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden}
+.server-card::before{content:'';position:absolute;inset:0 auto auto 0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(99,102,241,.3),transparent);opacity:0;transition:opacity .2s}
+.server-card:hover{border-color:var(--x);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4)}.server-card:hover::before{opacity:1}
+.server-card.inactive{opacity:.58}.server-card.inactive:hover{border-color:var(--b1);transform:none;box-shadow:none}
 .card-top{display:flex;align-items:center;gap:14px}
-.s-icon{width:48px;height:48px;border-radius:12px;background:var(--layer2);border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:18px;font-weight:900;color:var(--x2);overflow:hidden;flex-shrink:0}
+.s-icon{width:52px;height:52px;border-radius:14px;background:var(--layer2);border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:18px;font-weight:900;color:var(--x2);overflow:hidden;flex-shrink:0}
 .s-icon img{width:100%;height:100%;object-fit:cover}
-.s-name{font-family:var(--head);font-size:14px;font-weight:800;letter-spacing:-.2px}
+.s-name{font-family:var(--head);font-size:15px;font-weight:800;letter-spacing:-.2px}
 .s-id{font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:2px}
-
-.card-foot{display:flex;align-items:center;justify-content:space-between}
+.card-copy{font-size:12px;color:var(--t2);line-height:1.5}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .status{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9.5px;font-weight:700;padding:3px 10px;border-radius:99px}
 .status.active{background:var(--gd);color:var(--green);border:1px solid rgba(34,211,164,.2)}
 .status.inactive{background:var(--layer2);color:var(--t3);border:1px solid var(--b1)}
 .status-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
-.status.active .status-dot{animation:blink 1.5s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .manage-lnk{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--x2);display:flex;align-items:center;gap:4px}
-.add-btn{font-size:11px;color:var(--t3);border:1px solid var(--b1);padding:4px 12px;border-radius:6px;text-decoration:none;transition:all .15s;font-family:var(--mono)}
+.add-btn{font-size:11px;color:var(--t3);border:1px solid var(--b1);padding:4px 12px;border-radius:8px;text-decoration:none;transition:all .15s;font-family:var(--mono)}
 .add-btn:hover{color:var(--t1);border-color:var(--b2)}
 </style>
 </head>
 <body>
 <nav class="topnav">
-  <div class="nav-logo"><div class="nav-mark">S</div><span class="nav-name">Severus</span></div>
+  <div class="nav-logo"><div class="nav-mark">{{ brand.logo_text[:1] }}</div><span class="nav-name">{{ brand.name }}</span></div>
   <div class="user-pill">
     <img src="https://cdn.discordapp.com/avatars/{{ user.id }}/{{ user.avatar }}.png?size=64" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" alt="">
     <span>{{ user.username }}</span>
@@ -62,7 +54,7 @@ a{text-decoration:none;color:inherit}::-webkit-scrollbar{width:4px}::-webkit-scr
 <div class="page">
   <div class="page-head">
     <h1>Select a Server</h1>
-    <p>Choose a server you manage. Servers with the bot show live data.</p>
+    <p>Choose a guild you manage. Active servers open the full dashboard immediately, and inactive servers can be invited with one click.</p>
   </div>
 
   {% set active = guilds | selectattr('bot_added') | list %}
@@ -78,9 +70,10 @@ a{text-decoration:none;color:inherit}::-webkit-scrollbar{width:4px}::-webkit-scr
           <div class="s-icon">{% if g.icon %}<img src="https://cdn.discordapp.com/icons/{{ g.id }}/{{ g.icon }}.png" alt="">{% else %}{{ g.name[:1] }}{% endif %}</div>
           <div><div class="s-name">{{ g.name }}</div><div class="s-id">{{ g.id }}</div></div>
         </div>
+        <div class="card-copy">Dashboard access, live stats, moderation tooling, embeds, focus systems, and server controls.</div>
         <div class="card-foot">
           <div class="status active"><div class="status-dot"></div>ACTIVE</div>
-          <div class="manage-lnk">Manage →</div>
+          <div class="manage-lnk">Manage -></div>
         </div>
       </a>
       {% endfor %}
@@ -98,9 +91,10 @@ a{text-decoration:none;color:inherit}::-webkit-scrollbar{width:4px}::-webkit-scr
           <div class="s-icon">{% if g.icon %}<img src="https://cdn.discordapp.com/icons/{{ g.id }}/{{ g.icon }}.png" alt="">{% else %}{{ g.name[:1] }}{% endif %}</div>
           <div><div class="s-name">{{ g.name }}</div><div class="s-id">{{ g.id }}</div></div>
         </div>
+        <div class="card-copy">Invite {{ brand.name }} here to unlock the same control surface, music stack, and server operations tooling.</div>
         <div class="card-foot">
           <div class="status inactive"><div class="status-dot"></div>NOT INSTALLED</div>
-          <a href="https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot+applications.commands&guild_id={{ g.id }}" class="add-btn" target="_blank">Add Bot</a>
+          <a href="{{ brand.invite_url }}&guild_id={{ g.id }}" class="add-btn" target="_blank" rel="noreferrer">Add Bot</a>
         </div>
       </div>
       {% endfor %}

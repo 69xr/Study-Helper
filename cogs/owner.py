@@ -30,8 +30,29 @@ class Owner(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    def _resolve_reload_targets(self, cog: str) -> list[str]:
+        query = cog.strip().lower()
+        if query == "all":
+            canonical = list(getattr(self.bot, "canonical_cogs", ()))
+            return canonical or list(self.bot.extensions.keys())
+
+        loaded = list(self.bot.extensions.keys())
+        aliases = {
+            ext.lower(): ext for ext in loaded
+        }
+        for ext in loaded:
+            short = ext.removeprefix("cogs.").lower()
+            aliases.setdefault(short, ext)
+            aliases.setdefault(short.split(".")[-1], ext)
+
+        target = aliases.get(query)
+        if target:
+            return [target]
+
+        return [f"cogs.{query}"]
+
     # ── /blacklist ────────────────────────────────────────────
-    @app_commands.command(name="blacklist", description="[OWNER] Blacklist a user from using the bot.")
+    @app_commands.command(name="blacklist", description="Owner: block a user from using the bot.")
     @app_commands.describe(user_id="The user's Discord ID", reason="Why they are blacklisted")
     @is_owner()
     async def blacklist(self, interaction: discord.Interaction, user_id: str, reason: str = "No reason provided"):
@@ -63,7 +84,7 @@ class Owner(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     # ── /unblacklist ──────────────────────────────────────────
-    @app_commands.command(name="unblacklist", description="[OWNER] Remove a user from the blacklist.")
+    @app_commands.command(name="unblacklist", description="Owner: remove a user from the blacklist.")
     @app_commands.describe(user_id="The user's Discord ID")
     @is_owner()
     async def unblacklist(self, interaction: discord.Interaction, user_id: str):
@@ -86,7 +107,7 @@ class Owner(commands.Cog):
         )
 
     # ── /blacklistview ────────────────────────────────────────
-    @app_commands.command(name="blacklistview", description="[OWNER] View all blacklisted users.")
+    @app_commands.command(name="blacklistview", description="Owner: review all blacklisted users.")
     @is_owner()
     async def blacklistview(self, interaction: discord.Interaction):
         bl = await db.get_blacklist()
@@ -113,41 +134,23 @@ class Owner(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # ── /reload ───────────────────────────────────────────────
-    @app_commands.command(name="reload", description="[OWNER] Reload a cog.")
+    @app_commands.command(name="reload", description="Owner: reload one module or the full bot command stack.")
     @app_commands.describe(cog="Cog name, e.g. moderation | all to reload everything")
     @is_owner()
     async def reload(self, interaction: discord.Interaction, cog: str):
         await interaction.response.defer(ephemeral=True)
-
-        cogs_to_reload = (
-            [
-                "cogs.general.ping", "cogs.general.avatar", "cogs.general.uptime",
-                "cogs.general.serverinfo", "cogs.general.userinfo", "cogs.general.snipe",
-                "cogs.general.help", "cogs.general.reminders",
-                "cogs.moderation.kick", "cogs.moderation.ban", "cogs.moderation.warn",
-                "cogs.moderation.clear", "cogs.moderation.mute", "cogs.moderation.slowmode",
-                "cogs.moderation.timeout", "cogs.moderation.notes", "cogs.moderation.thresholds",
-                "cogs.roles.panels",
-                "cogs.settings.config", "cogs.settings.aliases",
-                "cogs.automod",
-                "cogs.logging.logger",
-                "cogs.temprooms.rooms", "cogs.temprooms.invite",
-                "cogs.community.custom_commands", "cogs.community.autoroles",
-                "cogs.music.player", "cogs.music.lyrics",
-                "cogs.security.security",
-                "cogs.owner",
-            ]
-            if cog.lower() == "all"
-            else [f"cogs.{cog.lower()}"]
-        )
+        cogs_to_reload = self._resolve_reload_targets(cog)
 
         results = []
         for c in cogs_to_reload:
             try:
-                await self.bot.reload_extension(c)
+                if c in self.bot.extensions:
+                    await self.bot.reload_extension(c)
+                else:
+                    await self.bot.load_extension(c)
                 results.append(f"✅ `{c}`")
             except Exception as e:
-                results.append(f"❌ `{c}` — {e}")
+                results.append(f"❌ `{c}` - {e}")
 
         await interaction.followup.send(
             embed=discord.Embed(
@@ -159,7 +162,7 @@ class Owner(commands.Cog):
         )
 
     # ── /shutdown ─────────────────────────────────────────────
-    @app_commands.command(name="shutdown", description="[OWNER] Gracefully shut down the bot.")
+    @app_commands.command(name="shutdown", description="Owner: gracefully shut down the bot.")
     @is_owner()
     async def shutdown(self, interaction: discord.Interaction):
         await interaction.response.send_message(
@@ -169,7 +172,7 @@ class Owner(commands.Cog):
         await self.bot.close()
 
     # ── /announce ─────────────────────────────────────────────
-    @app_commands.command(name="announce", description="[OWNER] Send an announcement to a channel.")
+    @app_commands.command(name="announce", description="Owner: send a branded announcement to a channel.")
     @app_commands.describe(channel="Target channel", title="Embed title", message="Embed body", ping_everyone="Ping @everyone?")
     @is_owner()
     async def announce(
@@ -192,7 +195,7 @@ class Owner(commands.Cog):
         )
 
     # ── /botstats ─────────────────────────────────────────────
-    @app_commands.command(name="botstats", description="[OWNER] View detailed bot statistics.")
+    @app_commands.command(name="botstats", description="Owner: inspect high-level bot statistics.")
     @is_owner()
     async def botstats(self, interaction: discord.Interaction):
         total_members = sum(g.member_count for g in self.bot.guilds)
@@ -217,7 +220,7 @@ class Owner(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # ── /dm ───────────────────────────────────────────────────
-    @app_commands.command(name="dm", description="[OWNER] DM a user from the bot.")
+    @app_commands.command(name="dm", description="Owner: send a direct message through the bot.")
     @app_commands.describe(user_id="User ID to DM", message="Message content")
     @is_owner()
     async def dm(self, interaction: discord.Interaction, user_id: str, message: str):

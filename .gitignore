@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+
+data/*.db
+data/*.log
+data/ipc/*.jsonl
+data/session_cache/*.pkl
+
+dashboard/[{]templates,static[}]/
+dashboard/[{]templates,static[}]/[{]css,js,img[}]/
+[{]cogs,utils,data[}]/

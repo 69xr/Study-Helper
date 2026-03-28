@@ -9,6 +9,7 @@ from discord import app_commands
 from discord.ext import commands
 from utils import db
 from utils.helpers import success_embed, error_embed
+from utils.product_catalog import ALIAS_COMMANDS
 
 
 # ══════════════════════════════════════════════════════════
@@ -91,41 +92,7 @@ class SyntheticInteraction:
 #  ALIAS GROUP COMMANDS
 # ══════════════════════════════════════════════════════════
 
-ALL_COMMANDS = [
-    # General
-    "ping", "avatar", "banner", "uptime", "botinfo", "help",
-    "server", "servericon", "serverbanner", "membercount",
-    "userinfo", "roleinfo", "emojiinfo", "snipe",
-    "remind", "reminders", "remindcancel", "afk",
-    # Moderation
-    "kick", "ban", "unban", "mute", "unmute", "setupmute",
-    "timeout", "untimeout",
-    "warn", "warnings", "clearwarns", "delwarn",
-    "clear", "slowmode", "lockdown", "unlockdown",
-    "note add", "note view", "note delete",
-    "warnthreshold set", "warnthreshold list", "warnthreshold remove",
-    # Roles
-    "panels", "autorole add", "autorole remove", "autorole list",
-    # Settings
-    "setlog", "setwelcome", "settings",
-    # Temp Rooms
-    "temproom setup", "temproom rename", "temproom limit",
-    "temproom lock", "temproom unlock", "temproom kick",
-    "temproom ban", "temproom unban", "temproom transfer",
-    "temproom delete", "temproom invite", "temproom info",
-    # Music
-    "play", "pause", "resume", "skip", "stop", "queue",
-    "nowplaying", "volume", "loop", "shuffle", "remove", "join", "leave", "clearqueue",
-    # Community / AutoMod
-    "automod toggle", "automod spam", "automod links", "automod words",
-    "automod caps", "automod mentions", "automod exempt", "automod status",
-    "alias add", "alias remove", "alias list",
-    # Security
-    "lockserver", "unlockserver", "antiraid", "verification",
-    # Owner
-    "blacklist", "unblacklist", "blacklistview",
-    "reload", "shutdown", "announce", "botstats", "dm",
-]
+ALL_COMMANDS = ALIAS_COMMANDS
 
 alias_group = app_commands.Group(name="alias", description="Manage command aliases for this server.")
 
@@ -184,7 +151,7 @@ class Aliases(commands.Cog):
             embed.description = (
                 "No aliases yet.\n\n"
                 "**Example:** `/alias add a avatar` — then just type `a` in chat to run `/avatar`\n"
-                "**Example:** `/alias add r rank` — type `r` to check your XP rank"
+                "**Example:** `/alias add w warn` — type `w @user reason` to warn quickly"
             )
         else:
             lines = [f"`{a['alias']}` → `/{a['command']}`" for a in aliases]
@@ -212,7 +179,7 @@ class Aliases(commands.Cog):
                         return app_cmd
 
         elif len(parts) == 2:
-            # Group command (e.g. "eco give", "ticket open")
+            # Group command (e.g. "warnthreshold set", "autorole add")
             grp = bot.tree.get_command(parts[0])
             if grp and hasattr(grp, "get_command"):
                 sub = grp.get_command(parts[1])

@@ -1,94 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Severus — Discord Control Panel</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Outfit:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-:root {
-  --void:#04050a;--base:#080b12;--layer:#10141f;--layer2:#151929;
-  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.10);
-  --x:#6366f1;--x2:#818cf8;--xd:rgba(99,102,241,.12);
-  --green:#22d3a4;--gd:rgba(34,211,164,.1);
-  --t1:#f0f2ff;--t2:#8b92b8;--t3:#4a5175;
-  --mono:'IBM Plex Mono',monospace;--head:'Outfit',sans-serif;--body:'DM Sans',sans-serif;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--base);color:var(--t1);font-family:var(--body);overflow:hidden}
-/* Animated grid background */
-body::before{
-  content:'';position:fixed;inset:0;pointer-events:none;
-  background-image:linear-gradient(var(--b1) 1px,transparent 1px),linear-gradient(90deg,var(--b1) 1px,transparent 1px);
-  background-size:44px 44px;
-  animation:grid-pan 40s linear infinite;
-}
-@keyframes grid-pan{from{background-position:0 0}to{background-position:44px 44px}}
-/* Glow orbs */
-.g1,.g2{position:fixed;border-radius:50%;pointer-events:none;filter:blur(100px)}
-.g1{width:600px;height:600px;top:-200px;left:-150px;background:rgba(99,102,241,.07)}
-.g2{width:500px;height:500px;bottom:-150px;right:-100px;background:rgba(34,211,164,.05)}
+{% extends "public_page.html" %}
+{% block title %}{{ brand.name }} | {{ brand.dashboard_title }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="kicker">{{ brand.hero_kicker }}</div>
+  <h1>{{ brand.hero_title }}</h1>
+  <p>{{ brand.hero_subtitle }}</p>
+  <div class="hero-actions">
+    <a class="cta primary" href="{{ url_for('login') }}">Login With Discord</a>
+    <a class="cta ghost" href="{{ brand.invite_url }}" target="_blank" rel="noreferrer">Add Bot</a>
+    <a class="cta ghost" href="{{ url_for('contact_page') }}">Contact</a>
+    <a class="cta ghost" href="{{ url_for('support_page') }}">Support</a>
+    <a class="cta ghost" href="{{ url_for('policy_page') }}">Policy</a>
+  </div>
+</section>
 
-/* Layout */
-.page{display:grid;grid-template-rows:60px 1fr;height:100vh;position:relative;z-index:1}
-
-/* Topnav */
-.nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;border-bottom:1px solid var(--b1);background:rgba(8,11,18,.8);backdrop-filter:blur(20px)}
-.nav-logo{display:flex;align-items:center;gap:10px}
-.nav-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--x),#a78bfa);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:16px;font-weight:900;color:#fff}
-.nav-name{font-family:var(--head);font-size:16px;font-weight:900;letter-spacing:-.3px}
-.nav-right{display:flex;align-items:center;gap:10px}
-.nav-chip{font-family:var(--mono);font-size:9.5px;background:var(--gd);border:1px solid rgba(34,211,164,.2);color:var(--green);padding:3px 10px;border-radius:99px;display:flex;align-items:center;gap:5px}
-.nav-chip-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 1.5s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-
-/* Hero */
-.hero{display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:0 24px;gap:0}
-.hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--xd);border:1px solid rgba(99,102,241,.25);border-radius:99px;padding:5px 16px;font-family:var(--mono);font-size:10px;letter-spacing:.5px;color:var(--x2);margin-bottom:28px;animation:fade-up .6s ease both}
-.hero h1{font-family:var(--head);font-size:clamp(36px,5.5vw,64px);font-weight:900;line-height:1.05;letter-spacing:-2px;margin-bottom:16px;animation:fade-up .6s .1s ease both}
-.hero h1 span{background:linear-gradient(135deg,var(--x),var(--x2),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero-sub{font-size:17px;color:var(--t2);line-height:1.65;max-width:500px;margin-bottom:36px;animation:fade-up .6s .2s ease both;font-weight:400}
-.hero-cta{display:flex;gap:12px;align-items:center;animation:fade-up .6s .3s ease both}
-.cta-primary{display:inline-flex;align-items:center;gap:10px;background:var(--x);color:#fff;padding:13px 28px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;transition:all .2s;font-family:var(--head)}
-.cta-primary:hover{background:#4f52e0;box-shadow:0 0 30px rgba(99,102,241,.4);transform:translateY(-1px)}
-.cta-disc{display:inline-flex;align-items:center;gap:8px;color:var(--t2);font-size:13px;font-weight:500;text-decoration:none;transition:color .15s}
-.cta-disc:hover{color:var(--t1)}
-/* Feature pills */
-.features{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:40px;animation:fade-up .6s .4s ease both}
-.feat-pill{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--layer);border:1px solid var(--b1);border-radius:99px;font-size:12px;font-weight:500;color:var(--t2);transition:all .15s}
-.feat-pill:hover{border-color:var(--b2);color:var(--t1);background:var(--layer2)}
-@keyframes fade-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-</style>
-</head>
-<body>
-<div class="g1"></div><div class="g2"></div>
-<div class="page">
-  <nav class="nav">
-    <div class="nav-logo">
-      <div class="nav-mark">S</div>
-      <span class="nav-name">Severus</span>
-    </div>
-    <div class="nav-right">
-      <div class="nav-chip"><span class="nav-chip-dot"></span>Bot Online</div>
-    </div>
-  </nav>
-  <div class="hero">
-    <div class="hero-badge">⚡ Discord Management Platform</div>
-    <h1>Your server.<br><span>Your control.</span></h1>
-    <p class="hero-sub">Moderation, music, AutoMod, role panels, temp rooms — all configured through one clean dashboard.</p>
-    <div class="hero-cta">
-      <a href="/login" class="cta-primary">
-        <svg width="20" height="16" viewBox="0 0 71 55" fill="none"><path d="M60.1 4.9A58.5 58.5 0 0 0 45.5.6a41 41 0 0 0-1.8 3.7 54 54 0 0 0-16.3 0A38.7 38.7 0 0 0 25.5.6 58.4 58.4 0 0 0 10.9 5C1.6 18.7-1 32.2.3 45.5a59 59 0 0 0 18 9.1 44 44 0 0 0 3.8-6.2 38.5 38.5 0 0 1-6-2.9l1.5-1.1a42.1 42.1 0 0 0 36.2 0l1.5 1.1a38.4 38.4 0 0 1-6 2.9 43.5 43.5 0 0 0 3.8 6.2 58.7 58.7 0 0 0 18-9.1c1.5-15.5-2.5-28.9-10.6-40.6ZM23.7 37.3c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.2 6.4 7.2c0 4-2.8 7.2-6.4 7.2Zm23.6 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.2 6.4 7.2c0 4-2.8 7.2-6.4 7.2Z" fill="white"/></svg>
-        Login with Discord
-      </a>
-      <a href="https://discord.com/oauth2/authorize" class="cta-disc">Add to server →</a>
-    </div>
-    <div class="features">
-      {% for icon,label in [('🛡','Moderation'),('🤖','AutoMod'),('🎵','Music'),('🔊','Temp Rooms'),('🎭','Role Panels'),('⚡','Custom Commands'),('🔒','Security'),('📢','Announcements'),('📋','Audit Log'),('⚙','Dashboard')] %}
-      <div class="feat-pill"><span>{{ icon }}</span>{{ label }}</div>
-      {% endfor %}
+<section class="panel-grid">
+  <div class="card">
+    <h2>Why This Dashboard Feels Better</h2>
+    <p>{{ brand.tagline }}</p>
+    <div class="list">
+      <div class="item">Faster access to moderation, security, embeds, focus systems, and live server controls.</div>
+      <div class="item">Cleaner dashboard structure with one place to manage core server workflows.</div>
+      <div class="item">Public-facing contact, support, and policy pages instead of dead-end UI.</div>
+      <div class="item">Brand settings live in one file so logos, links, and messaging are easy to change.</div>
     </div>
   </div>
-</div>
-</body>
-</html>
+  <div class="card">
+    <h2>Core Surfaces</h2>
+    <div class="list">
+      <div class="item">Moderation, warning analytics, audit visibility, and verification controls</div>
+      <div class="item">Music operations across YouTube, Spotify, and SoundCloud sources</div>
+      <div class="item">Focus systems, temp rooms, role panels, and custom commands</div>
+      <div class="item">Server-wide embeds, announcements, aliases, and member tooling</div>
+    </div>
+  </div>
+</section>
+{% endblock %}

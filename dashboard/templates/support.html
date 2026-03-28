@@ -1,0 +1,32 @@
+{% extends "public_page.html" %}
+{% block title %}Support | {{ brand.name }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="kicker">Support</div>
+  <h1>Get operational help without digging through clutter.</h1>
+  <p>{{ brand.support_blurb }}</p>
+  <div class="hero-actions">
+    <a class="cta primary" href="{{ brand.support_discord_url }}" target="_blank" rel="noreferrer">Open Discord Contact</a>
+    <a class="cta ghost" href="mailto:{{ brand.support_email }}">Email Support</a>
+  </div>
+</section>
+<section class="panel-grid">
+  <div class="card">
+    <h2>What We Help With</h2>
+    <div class="list">
+      <div class="item">Dashboard access and guild selection issues</div>
+      <div class="item">Slash-command sync and duplicate-command cleanup</div>
+      <div class="item">Voice playback, queue issues, and source resolution errors</div>
+      <div class="item">Moderation, focus, verification, and automation setup</div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Fast Paths</h2>
+    <div class="list">
+      <div class="item"><strong>Email:</strong> {{ brand.support_email }}</div>
+      <div class="item"><strong>Discord:</strong> {{ brand.support_discord_url }}</div>
+      <div class="item"><strong>Dashboard:</strong> {{ brand.dashboard_url }}</div>
+    </div>
+  </div>
+</section>
+{% endblock %}

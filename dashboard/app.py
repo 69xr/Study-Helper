@@ -15,11 +15,14 @@ import asyncio, aiosqlite, json, threading, time
 from functools import wraps
 from datetime import datetime, timezone
 import config
+from utils.product_catalog import ALIAS_COMMANDS
+from dashboard.branding import get_brand
 
 import hashlib, pickle, pathlib
 
 app = Flask(__name__)
 app.secret_key = config.DASHBOARD_SECRET_KEY
+app.jinja_env.globals["brand"] = get_brand()
 
 # ── Flask-SocketIO ─────────────────────────────────────────────
 #  async_mode='threading' works with Flask dev server + eventlet/gevent.
@@ -61,6 +64,7 @@ def _ensure_db():
         try:
             loop.run_until_complete(_db_mod.init_db())
             loop.run_until_complete(_db_mod.init_new_tables())
+            loop.run_until_complete(_db_mod.cleanup_removed_features())
         finally:
             loop.close()
         _db_initialized = True
@@ -70,6 +74,11 @@ def _ensure_db():
 @app.before_request
 def before_request():
     _ensure_db()
+
+
+@app.context_processor
+def inject_brand():
+    return {"brand": get_brand()}
 
 # ─────────────────────────────────────────────────────────────
 #  SERVER-SIDE SESSION CACHE
@@ -208,6 +217,21 @@ def index():
     return redirect(url_for("select_server")) if "user" in session \
            else render_template("landing.html")
 
+
+@app.route("/support")
+def support_page():
+    return render_template("support.html")
+
+
+@app.route("/contact")
+def contact_page():
+    return render_template("contact.html")
+
+
+@app.route("/policy")
+def policy_page():
+    return render_template("policy.html")
+
 @app.route("/login")
 def login():
     return redirect(OAUTH_URL)
@@ -345,6 +369,9 @@ ALLOWED_SETTINGS = {
     "log_msg_delete", "log_msg_edit", "log_member_join",
     "log_member_leave", "log_member_update", "log_voice",
     "log_mod_actions", "log_roles",
+    "focus_xp_per_min", "focus_coins_per_min", "focus_max_session_min",
+    "focus_min_vc_members", "focus_bonus_multiplier",
+    "focus_allowed_role_id", "focus_log_channel_id",
 }
 
 @app.route("/dashboard/<guild_id>/settings", methods=["GET", "POST"])
@@ -361,11 +388,30 @@ def guild_settings(guild_id):
             (None if value == "" else value, guild_id)
         ))
         return jsonify({"ok": True})
-    settings        = run_async(db_fetchone("SELECT * FROM guild_settings WHERE guild_id=?",        (guild_id,))) or {}
-    ticket_settings = run_async(db_fetchone("SELECT * FROM ticket_settings WHERE guild_id=?", (guild_id,))) or {}
+    settings = run_async(db_fetchone("SELECT * FROM guild_settings WHERE guild_id=?", (guild_id,))) or {}
     return render_template("settings.html",
         guild=_guild(guild_id), guild_id=guild_id,
-        settings=settings, ticket_settings=ticket_settings, user=session["user"])
+        settings=settings, user=session["user"])
+
+
+@app.route("/dashboard/<guild_id>/focus")
+@login_required
+@guild_access_required
+def focus_dashboard(guild_id):
+    run_async(db_execute("INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)", (int(guild_id),)))
+    settings = run_async(db_fetchone("SELECT * FROM guild_settings WHERE guild_id=?", (int(guild_id),))) or {}
+    blocked = run_async(db_fetch(
+        "SELECT channel_id FROM focus_blocked_channels WHERE guild_id=? ORDER BY channel_id",
+        (int(guild_id),),
+    ))
+    return render_template(
+        "focus.html",
+        guild=_guild(guild_id),
+        guild_id=guild_id,
+        user=session["user"],
+        settings=settings,
+        blocked=blocked,
+    )
 
 # ─────────────────────────────────────────────────────────────
 #  MODERATION
@@ -628,29 +674,7 @@ def aliases(guild_id):
     rows = run_async(db_fetch(
         "SELECT * FROM command_aliases WHERE guild_id=? ORDER BY alias ASC", (guild_id,)
     ))
-    # Full command list for the UI dropdown
-    all_cmds = [
-        "ping", "avatar", "uptime", "help", "server", "userinfo", "snipe",
-        "remind", "reminders", "remindcancel",
-        "kick", "ban", "unban", "mute", "unmute", "setupmute",
-        "timeout", "untimeout",
-        "warn", "warnings", "clearwarns", "delwarn", "clear", "slowmode",
-        "warnthreshold set", "warnthreshold list", "warnthreshold remove",
-        "panels", "autorole add", "autorole remove", "autorole list",
-        "setlog", "setwelcome", "settings",
-        "temproom setup", "temproom rename", "temproom limit",
-        "temproom lock", "temproom unlock", "temproom kick",
-        "temproom ban", "temproom unban", "temproom transfer",
-        "temproom delete", "temproom info",
-        "play", "pause", "resume", "skip", "stop", "queue",
-        "nowplaying", "volume", "loop", "shuffle", "remove", "join", "leave",
-        "automod toggle", "automod spam", "automod links", "automod words",
-        "automod caps", "automod mentions", "automod exempt", "automod status",
-        "alias add", "alias remove", "alias list",
-        "lockserver", "unlockserver", "antiraid", "verification",
-        "blacklist", "unblacklist", "blacklistview",
-        "reload", "shutdown", "announce", "botstats", "dm",
-    ]
+    all_cmds = ALIAS_COMMANDS
     return render_template("aliases.html",
         guild=_guild(guild_id), guild_id=guild_id, user=session["user"],
         aliases=rows, all_cmds=all_cmds)
@@ -808,9 +832,6 @@ def user_search(guild_id):
                 "SELECT * FROM economy WHERE guild_id=? AND user_id=?", (guild_id, user_id))) or {}
             result["levels"]   = run_async(db_fetchone(
                 "SELECT * FROM levels WHERE guild_id=? AND user_id=?",  (guild_id, user_id))) or {}
-            result["tickets"]  = run_async(db_fetch(
-                "SELECT * FROM tickets WHERE guild_id=? AND user_id=? ORDER BY opened_at DESC LIMIT 5",
-                (guild_id, user_id))) or []
             result["audit"]    = run_async(db_fetch(
                 "SELECT * FROM audit_log WHERE guild_id=? AND target_id=? ORDER BY created_at DESC LIMIT 10",
                 (guild_id, user_id))) or []
@@ -1249,6 +1270,7 @@ def _init_db_sync():
         os.makedirs(config.DATA_DIR, exist_ok=True)
         loop.run_until_complete(_db.init_db())
         loop.run_until_complete(_db.init_new_tables())
+        loop.run_until_complete(_db.cleanup_removed_features())
         print("  💾  Database ready.")
     finally:
         loop.close()
@@ -1361,21 +1383,51 @@ def settings_save_field(guild_id):
     return jsonify({"ok": True})
 
 
-@app.route("/dashboard/<guild_id>/settings/ticket/save", methods=["POST"])
+@app.route("/dashboard/<guild_id>/focus/settings/save", methods=["POST"])
 @login_required
 @guild_access_required
-def settings_ticket_save(guild_id):
+def focus_settings_save(guild_id):
     d = request.get_json() or {}
-    ALLOWED = {"category_id", "log_channel", "support_role", "max_open"}
-    updates = {k: v for k, v in d.items() if k in ALLOWED}
+    allowed = {
+        "focus_xp_per_min", "focus_coins_per_min", "focus_max_session_min",
+        "focus_min_vc_members", "focus_bonus_multiplier",
+        "focus_allowed_role_id", "focus_log_channel_id",
+    }
+    updates = {k: v for k, v in d.items() if k in allowed}
     if not updates:
         return jsonify({"ok": False, "error": "No valid fields"}), 400
+    run_async(db_execute("INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)", (int(guild_id),)))
     for field, value in updates.items():
         run_async(db_execute(
-            f"INSERT INTO ticket_settings (guild_id, {field}) VALUES (?,?) "
-            f"ON CONFLICT(guild_id) DO UPDATE SET {field}=excluded.{field}",
-            (guild_id, None if value == "" else value)
+            f"UPDATE guild_settings SET {field}=? WHERE guild_id=?",
+            (None if value == "" else value, int(guild_id))
         ))
+    return jsonify({"ok": True})
+
+
+@app.route("/dashboard/<guild_id>/focus/blocked/add", methods=["POST"])
+@login_required
+@guild_access_required
+def focus_blocked_add(guild_id):
+    d = request.get_json() or {}
+    raw = str(d.get("channel_id", "")).strip()
+    if not raw.isdigit():
+        return jsonify({"ok": False, "error": "Channel ID must be numeric"}), 400
+    run_async(db_execute(
+        "INSERT OR IGNORE INTO focus_blocked_channels (channel_id, guild_id) VALUES (?,?)",
+        (int(raw), int(guild_id)),
+    ))
+    return jsonify({"ok": True})
+
+
+@app.route("/dashboard/<guild_id>/focus/blocked/remove/<int:channel_id>", methods=["POST"])
+@login_required
+@guild_access_required
+def focus_blocked_remove(guild_id, channel_id):
+    run_async(db_execute(
+        "DELETE FROM focus_blocked_channels WHERE channel_id=? AND guild_id=?",
+        (channel_id, int(guild_id)),
+    ))
     return jsonify({"ok": True})
 
 
@@ -1599,7 +1651,6 @@ def api_live_stats(guild_id):
     total_warns  = (run_async(db_fetchone("SELECT COUNT(*) as c FROM warnings WHERE guild_id=?", (gid,))) or {}).get("c", 0)
     warns_today  = (run_async(db_fetchone("SELECT COUNT(*) as c FROM warnings WHERE guild_id=? AND date(created_at)=date('now')", (gid,))) or {}).get("c", 0)
     afk_count    = (run_async(db_fetchone("SELECT COUNT(*) as c FROM afk_users WHERE guild_id=?", (gid,))) or {}).get("c", 0)
-    open_tickets = (run_async(db_fetchone("SELECT COUNT(*) as c FROM tickets WHERE guild_id=? AND status='open'", (gid,))) or {}).get("c", 0)
     temp_rooms   = (run_async(db_fetchone("SELECT COUNT(*) as c FROM temp_rooms WHERE guild_id=?", (gid,))) or {}).get("c", 0)
     bl_count     = (run_async(db_fetchone("SELECT COUNT(*) as c FROM blacklist", ())) or {}).get("c", 0)
     daily = run_async(db_fetch(
@@ -1611,7 +1662,7 @@ def api_live_stats(guild_id):
         "ok": True,
         "total_cmds": total_cmds, "cmds_today": cmds_today,
         "total_warns": total_warns, "warns_today": warns_today,
-        "afk_count": afk_count, "open_tickets": open_tickets,
+        "afk_count": afk_count,
         "temp_rooms": temp_rooms, "bl_count": bl_count,
         "sparkline": [{"day": r["day"], "total": r["total"]} for r in daily],
     })

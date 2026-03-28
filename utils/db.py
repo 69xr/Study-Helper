@@ -116,33 +116,6 @@ CREATE INDEX IF NOT EXISTS idx_cmd_guild ON command_stats(guild_id, used_at);
 NEW_TABLES = """
 PRAGMA journal_mode=WAL;
 
-CREATE TABLE IF NOT EXISTS ticket_settings (
-    guild_id        INTEGER PRIMARY KEY,
-    category_id     INTEGER DEFAULT NULL,
-    log_channel     INTEGER DEFAULT NULL,
-    support_role    INTEGER DEFAULT NULL,
-    ticket_msg      TEXT    DEFAULT 'Thank you for opening a ticket. Support will be with you shortly.',
-    max_open        INTEGER DEFAULT 1,
-    counter         INTEGER DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS tickets (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    guild_id    INTEGER NOT NULL,
-    channel_id  INTEGER NOT NULL UNIQUE,
-    user_id     INTEGER NOT NULL,
-    ticket_num  INTEGER NOT NULL,
-    subject     TEXT    DEFAULT 'Support Ticket',
-    status      TEXT    DEFAULT 'open',
-    claimed_by  INTEGER DEFAULT NULL,
-    transcript  TEXT    DEFAULT NULL,
-    opened_at   TEXT    DEFAULT (datetime('now')),
-    closed_at   TEXT    DEFAULT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_tickets_guild  ON tickets(guild_id);
-CREATE INDEX IF NOT EXISTS idx_tickets_user   ON tickets(user_id);
-CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
-
 CREATE TABLE IF NOT EXISTS economy (
     guild_id     INTEGER NOT NULL,
     user_id      INTEGER NOT NULL,
@@ -280,6 +253,116 @@ CREATE TABLE IF NOT EXISTS afk_users (
     PRIMARY KEY (guild_id, user_id)
 );
 CREATE INDEX IF NOT EXISTS idx_afk_guild ON afk_users(guild_id);
+
+CREATE TABLE IF NOT EXISTS focus_users (
+    user_id       INTEGER PRIMARY KEY,
+    xp            INTEGER DEFAULT 0,
+    coins         INTEGER DEFAULT 100,
+    total_focus   INTEGER DEFAULT 0,
+    sessions      INTEGER DEFAULT 0,
+    created_at    TEXT    DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS focus_user_streaks (
+    user_id       INTEGER PRIMARY KEY,
+    current       INTEGER DEFAULT 0,
+    longest       INTEGER DEFAULT 0,
+    last_session  TEXT    DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS focus_user_flags (
+    user_id       INTEGER NOT NULL,
+    guild_id      INTEGER NOT NULL,
+    xp_blocked    INTEGER DEFAULT 0,
+    note          TEXT    DEFAULT '',
+    PRIMARY KEY (user_id, guild_id)
+);
+
+CREATE TABLE IF NOT EXISTS focus_pets (
+    pet_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id       INTEGER NOT NULL,
+    species       TEXT    NOT NULL,
+    name          TEXT    NOT NULL,
+    rarity        TEXT    NOT NULL,
+    level         INTEGER DEFAULT 1,
+    xp            INTEGER DEFAULT 0,
+    happiness     INTEGER DEFAULT 100,
+    active        INTEGER DEFAULT 0,
+    acquired_at   TEXT    DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_focus_pets_user ON focus_pets(user_id);
+
+CREATE TABLE IF NOT EXISTS focus_owned_roles (
+    user_id       INTEGER NOT NULL,
+    role_id       INTEGER NOT NULL,
+    guild_id      INTEGER NOT NULL,
+    PRIMARY KEY (user_id, role_id)
+);
+
+CREATE TABLE IF NOT EXISTS focus_shop_roles (
+    role_id       INTEGER PRIMARY KEY,
+    guild_id      INTEGER NOT NULL,
+    name          TEXT    NOT NULL,
+    price         INTEGER NOT NULL,
+    color         INTEGER NOT NULL DEFAULT 0,
+    description   TEXT    DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS focus_shop_messages (
+    guild_id      INTEGER PRIMARY KEY,
+    channel_id    INTEGER NOT NULL,
+    message_id    INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS focus_blocked_channels (
+    channel_id    INTEGER NOT NULL,
+    guild_id      INTEGER NOT NULL,
+    PRIMARY KEY (channel_id, guild_id)
+);
+
+CREATE TABLE IF NOT EXISTS focus_active_timers (
+    vc_id             INTEGER PRIMARY KEY,
+    message_id        INTEGER NOT NULL,
+    owner_id          INTEGER NOT NULL,
+    guild_id          INTEGER NOT NULL,
+    text_channel_id   INTEGER NOT NULL,
+    theme             TEXT    NOT NULL,
+    duration          INTEGER NOT NULL,
+    break_time        INTEGER NOT NULL,
+    start_time        REAL    NOT NULL,
+    end_time          REAL    NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS focus_timer_members (
+    vc_id         INTEGER NOT NULL,
+    user_id       INTEGER NOT NULL,
+    joined_at     REAL    NOT NULL,
+    PRIMARY KEY (vc_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS focus_session_history (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id       INTEGER NOT NULL,
+    guild_id      INTEGER NOT NULL,
+    vc_id         INTEGER NOT NULL,
+    theme         TEXT    NOT NULL,
+    duration      INTEGER NOT NULL,
+    xp_earned     INTEGER NOT NULL,
+    coins_earned  INTEGER NOT NULL,
+    completed_at  TEXT    DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_focus_history_user ON focus_session_history(user_id, id DESC);
+
+CREATE TABLE IF NOT EXISTS focus_audit_log (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id       INTEGER NOT NULL,
+    guild_id      INTEGER NOT NULL,
+    xp_delta      INTEGER DEFAULT 0,
+    coin_delta    INTEGER DEFAULT 0,
+    reason        TEXT    NOT NULL,
+    ts            REAL    DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_focus_audit_user_guild ON focus_audit_log(user_id, guild_id, id DESC);
 """
 
 
@@ -317,6 +400,13 @@ async def init_new_tables() -> None:
         "ALTER TABLE guild_settings ADD COLUMN unverified_role INTEGER DEFAULT NULL",
         "ALTER TABLE guild_settings ADD COLUMN bot_status TEXT DEFAULT NULL",
         "ALTER TABLE guild_settings ADD COLUMN bot_status_type TEXT DEFAULT 'watching'",
+        "ALTER TABLE guild_settings ADD COLUMN focus_xp_per_min INTEGER DEFAULT 10",
+        "ALTER TABLE guild_settings ADD COLUMN focus_coins_per_min INTEGER DEFAULT 5",
+        "ALTER TABLE guild_settings ADD COLUMN focus_max_session_min INTEGER DEFAULT 720",
+        "ALTER TABLE guild_settings ADD COLUMN focus_min_vc_members INTEGER DEFAULT 1",
+        "ALTER TABLE guild_settings ADD COLUMN focus_bonus_multiplier REAL DEFAULT 1.0",
+        "ALTER TABLE guild_settings ADD COLUMN focus_allowed_role_id INTEGER DEFAULT 0",
+        "ALTER TABLE guild_settings ADD COLUMN focus_log_channel_id INTEGER DEFAULT 0",
         "ALTER TABLE audit_log ADD COLUMN extra TEXT DEFAULT NULL",
         "ALTER TABLE role_panel_entries ADD COLUMN label TEXT DEFAULT 'Role'",
         "ALTER TABLE role_panel_entries ADD COLUMN position INTEGER DEFAULT 0",
@@ -328,6 +418,25 @@ async def init_new_tables() -> None:
                 await db.commit()
             except Exception:
                 pass
+
+
+async def cleanup_removed_features() -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DROP TABLE IF EXISTS tickets")
+        await db.execute("DROP TABLE IF EXISTS ticket_settings")
+        await db.execute(
+            "DELETE FROM command_stats WHERE command IN (?,?,?,?,?,?,?,?,?)",
+            ("giveaway", "gstart", "gend", "greroll", "glist", "ticketsetup", "ticket", "ticket open", "ticket close"),
+        )
+        await db.execute(
+            "DELETE FROM command_aliases WHERE command IN (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                "giveaway", "gstart", "gend", "greroll", "glist",
+                "ticketsetup", "ticket", "ticket open", "ticket close",
+                "ticket claim", "ticket add", "ticket remove", "ticket transcript",
+            ),
+        )
+        await db.commit()
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -361,6 +470,9 @@ async def set_guild_setting(guild_id: int, key: str, value) -> None:
         "log_msg_delete", "log_msg_edit", "log_member_join", "log_member_leave",
         "log_member_update", "log_voice", "log_mod_actions", "log_roles",
         "auto_roles", "dj_role",
+        "focus_xp_per_min", "focus_coins_per_min", "focus_max_session_min",
+        "focus_min_vc_members", "focus_bonus_multiplier",
+        "focus_allowed_role_id", "focus_log_channel_id",
     }
     if key not in ALLOWED:
         raise ValueError(f"Unknown setting: {key}")
@@ -688,81 +800,6 @@ async def get_alias_command(guild_id: int, alias: str) -> str | None:
 # ═══════════════════════════════════════════════════════════════
 #  TICKETS
 # ═══════════════════════════════════════════════════════════════
-
-async def get_ticket_settings(guild_id: int) -> dict:
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        await db.execute("INSERT OR IGNORE INTO ticket_settings (guild_id) VALUES (?)", (guild_id,))
-        await db.commit()
-        async with db.execute("SELECT * FROM ticket_settings WHERE guild_id=?", (guild_id,)) as c:
-            return dict(await c.fetchone())
-
-
-async def set_ticket_setting(guild_id: int, key: str, value) -> None:
-    ALLOWED = {"category_id", "log_channel", "support_role", "ticket_msg", "max_open"}
-    if key not in ALLOWED:
-        raise ValueError(f"Bad key: {key}")
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("INSERT OR IGNORE INTO ticket_settings (guild_id) VALUES (?)", (guild_id,))
-        await db.execute(f"UPDATE ticket_settings SET {key}=? WHERE guild_id=?", (value, guild_id))
-        await db.commit()
-
-
-async def create_ticket(guild_id: int, channel_id: int, user_id: int, subject: str) -> int:
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("INSERT OR IGNORE INTO ticket_settings (guild_id) VALUES (?)", (guild_id,))
-        await db.execute("UPDATE ticket_settings SET counter=counter+1 WHERE guild_id=?", (guild_id,))
-        async with db.execute("SELECT counter FROM ticket_settings WHERE guild_id=?", (guild_id,)) as c:
-            num = (await c.fetchone())[0]
-        cur = await db.execute(
-            "INSERT INTO tickets (guild_id,channel_id,user_id,ticket_num,subject) VALUES (?,?,?,?,?)",
-            (guild_id, channel_id, user_id, num, subject))
-        await db.commit()
-        return cur.lastrowid
-
-
-async def get_ticket_by_channel(channel_id: int) -> dict | None:
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM tickets WHERE channel_id=?", (channel_id,)) as c:
-            row = await c.fetchone()
-            return dict(row) if row else None
-
-
-async def get_user_open_tickets(guild_id: int, user_id: int) -> list[dict]:
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute(
-            "SELECT * FROM tickets WHERE guild_id=? AND user_id=? AND status='open'",
-            (guild_id, user_id)
-        ) as c:
-            return [dict(r) for r in await c.fetchall()]
-
-
-async def update_ticket(ticket_id: int, **kwargs) -> None:
-    ALLOWED = {"status", "claimed_by", "transcript", "closed_at", "subject"}
-    sets = ", ".join(f"{k}=?" for k in kwargs if k in ALLOWED)
-    vals = [v for k, v in kwargs.items() if k in ALLOWED] + [ticket_id]
-    if not sets:
-        return
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(f"UPDATE tickets SET {sets} WHERE id=?", vals)
-        await db.commit()
-
-
-async def get_guild_tickets(guild_id: int, status: str = None, limit: int = 50, offset: int = 0) -> list[dict]:
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        q = "SELECT * FROM tickets WHERE guild_id=?"
-        p = [guild_id]
-        if status:
-            q += " AND status=?"
-            p.append(status)
-        q += " ORDER BY opened_at DESC LIMIT ? OFFSET ?"
-        p += [limit, offset]
-        async with db.execute(q, p) as c:
-            return [dict(r) for r in await c.fetchall()]
-
 
 # ═══════════════════════════════════════════════════════════════
 #  ECONOMY  (read-only queries used by dashboard search)
@@ -1227,3 +1264,395 @@ async def get_verify_settings(guild_id: int) -> dict:
         ) as c:
             row = await c.fetchone()
             return dict(row) if row else {}
+
+
+# ======================================================================
+#  FOCUS MODE
+# ======================================================================
+
+FOCUS_DEFAULTS = {
+    "focus_xp_per_min": 10,
+    "focus_coins_per_min": 5,
+    "focus_max_session_min": 720,
+    "focus_min_vc_members": 1,
+    "focus_bonus_multiplier": 1.0,
+    "focus_allowed_role_id": 0,
+    "focus_log_channel_id": 0,
+}
+
+
+async def ensure_focus_user(user_id: int) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("INSERT OR IGNORE INTO focus_users (user_id) VALUES (?)", (user_id,))
+        await db.commit()
+
+
+async def get_focus_settings(guild_id: int) -> dict:
+    settings = await get_guild_settings(guild_id) or {}
+    merged = dict(FOCUS_DEFAULTS)
+    merged.update({k: settings.get(k, v) for k, v in FOCUS_DEFAULTS.items()})
+    merged["guild_id"] = guild_id
+    return merged
+
+
+async def set_focus_setting(guild_id: int, key: str, value) -> None:
+    allowed = set(FOCUS_DEFAULTS)
+    if key not in allowed:
+        raise ValueError(f"Unknown focus setting: {key}")
+    await set_guild_setting(guild_id, key, value)
+
+
+async def get_focus_user(user_id: int) -> dict:
+    await ensure_focus_user(user_id)
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM focus_users WHERE user_id=?", (user_id,)) as c:
+            row = await c.fetchone()
+            return dict(row) if row else {"user_id": user_id, "xp": 0, "coins": 100, "total_focus": 0, "sessions": 0}
+
+
+async def _focus_pet_xp(user_id: int, amount: int) -> None:
+    if amount <= 0:
+        return
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM focus_pets WHERE user_id=? AND active=1 LIMIT 1", (user_id,)) as c:
+            pet = await c.fetchone()
+        if not pet:
+            return
+        new_xp = pet["xp"] + amount
+        new_level = pet["level"]
+        while new_xp >= new_level * 100:
+            new_xp -= new_level * 100
+            new_level += 1
+        await db.execute(
+            "UPDATE focus_pets SET xp=?, level=?, happiness=MIN(100, happiness+1) WHERE pet_id=?",
+            (new_xp, new_level, pet["pet_id"]),
+        )
+        await db.commit()
+
+
+async def add_focus_xp(user_id: int, amount: int, guild_id: int = 0, reason: str = "") -> dict:
+    await ensure_focus_user(user_id)
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE focus_users SET xp = xp + ? WHERE user_id=?", (amount, user_id))
+        await db.commit()
+    if amount > 0:
+        await _focus_pet_xp(user_id, amount // 2)
+    if reason:
+        await add_focus_audit(user_id, guild_id, amount, 0, reason)
+    return await get_focus_user(user_id)
+
+
+async def add_focus_coins(user_id: int, amount: int, guild_id: int = 0, reason: str = "") -> int:
+    await ensure_focus_user(user_id)
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE focus_users SET coins = coins + ? WHERE user_id=?", (amount, user_id))
+        await db.commit()
+    if reason:
+        await add_focus_audit(user_id, guild_id, 0, amount, reason)
+    return (await get_focus_user(user_id))["coins"]
+
+
+async def spend_focus_coins(user_id: int, amount: int) -> bool:
+    user = await get_focus_user(user_id)
+    if user["coins"] < amount:
+        return False
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE focus_users SET coins = coins - ? WHERE user_id=?", (amount, user_id))
+        await db.commit()
+    return True
+
+
+async def add_focus_time(user_id: int, minutes: int) -> None:
+    await ensure_focus_user(user_id)
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "UPDATE focus_users SET total_focus = total_focus + ?, sessions = sessions + 1 WHERE user_id=?",
+            (minutes, user_id),
+        )
+        await db.commit()
+
+
+async def add_focus_audit(user_id: int, guild_id: int, xp_delta: int, coin_delta: int, reason: str) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT INTO focus_audit_log (user_id, guild_id, xp_delta, coin_delta, reason) VALUES (?,?,?,?,?)",
+            (user_id, guild_id, xp_delta, coin_delta, reason),
+        )
+        await db.commit()
+
+
+async def bulk_focus_reward(user_ids: list[int], xp: int, coins: int, guild_id: int = 0, reason: str = "focus_voice_minute") -> None:
+    if not user_ids:
+        return
+    settings = await get_focus_settings(guild_id)
+    xp_actual = max(1, round(xp * float(settings.get("focus_bonus_multiplier", 1.0))))
+    coins_actual = max(1, round(coins * float(settings.get("focus_bonus_multiplier", 1.0))))
+    rewarded: list[int] = []
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        for user_id in user_ids:
+            await db.execute("INSERT OR IGNORE INTO focus_users (user_id) VALUES (?)", (user_id,))
+            async with db.execute(
+                "SELECT xp_blocked FROM focus_user_flags WHERE user_id=? AND guild_id=?",
+                (user_id, guild_id),
+            ) as c:
+                row = await c.fetchone()
+            if row and row["xp_blocked"]:
+                continue
+            await db.execute(
+                "UPDATE focus_users SET xp = xp + ?, coins = coins + ? WHERE user_id=?",
+                (xp_actual, coins_actual, user_id),
+            )
+            rewarded.append(user_id)
+            if reason:
+                await db.execute(
+                    "INSERT INTO focus_audit_log (user_id, guild_id, xp_delta, coin_delta, reason) VALUES (?,?,?,?,?)",
+                    (user_id, guild_id, xp_actual, coins_actual, reason),
+                )
+        await db.commit()
+    for user_id in rewarded:
+        await _focus_pet_xp(user_id, xp_actual // 2)
+
+
+async def get_focus_leaderboard(limit: int = 10) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM focus_users ORDER BY xp DESC, total_focus DESC, sessions DESC LIMIT ?",
+            (limit,),
+        ) as c:
+            return [dict(r) for r in await c.fetchall()]
+
+
+async def update_focus_streak(user_id: int) -> None:
+    await ensure_focus_user(user_id)
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM focus_user_streaks WHERE user_id=?", (user_id,)) as c:
+            row = await c.fetchone()
+        async with db.execute("SELECT date('now')") as c:
+            today_str = (await c.fetchone())[0]
+        if not row:
+            await db.execute(
+                "INSERT INTO focus_user_streaks (user_id, current, longest, last_session) VALUES (?,?,?,?)",
+                (user_id, 1, 1, today_str),
+            )
+            await db.commit()
+            return
+        last = row["last_session"] or ""
+        if last == today_str:
+            return
+        async with db.execute("SELECT date('now', '-1 day')") as c:
+            yesterday = (await c.fetchone())[0]
+        current = row["current"] + 1 if last == yesterday else 1
+        longest = max(current, row["longest"])
+        await db.execute(
+            "UPDATE focus_user_streaks SET current=?, longest=?, last_session=? WHERE user_id=?",
+            (current, longest, today_str, user_id),
+        )
+        await db.commit()
+
+
+async def get_focus_streak(user_id: int) -> dict:
+    await ensure_focus_user(user_id)
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM focus_user_streaks WHERE user_id=?", (user_id,)) as c:
+            row = await c.fetchone()
+            return dict(row) if row else {"user_id": user_id, "current": 0, "longest": 0, "last_session": "Never"}
+
+
+async def set_focus_xp_block(user_id: int, guild_id: int, blocked: bool, note: str = "") -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT OR REPLACE INTO focus_user_flags (user_id, guild_id, xp_blocked, note) VALUES (?,?,?,?)",
+            (user_id, guild_id, int(blocked), note),
+        )
+        await db.commit()
+
+
+async def get_focus_flags(guild_id: int) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM focus_user_flags WHERE guild_id=? AND xp_blocked=1 ORDER BY user_id",
+            (guild_id,),
+        ) as c:
+            return [dict(r) for r in await c.fetchall()]
+
+
+async def add_focus_pet(user_id: int, species: str, name: str, rarity: str) -> int:
+    await ensure_focus_user(user_id)
+    async with aiosqlite.connect(DB_PATH) as db:
+        cur = await db.execute(
+            "INSERT INTO focus_pets (user_id, species, name, rarity, active) VALUES (?,?,?,?,?)",
+            (user_id, species, name, rarity, 0),
+        )
+        await db.commit()
+        return cur.lastrowid
+
+
+async def get_focus_pets(user_id: int) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM focus_pets WHERE user_id=? ORDER BY active DESC, rarity DESC, pet_id ASC",
+            (user_id,),
+        ) as c:
+            return [dict(r) for r in await c.fetchall()]
+
+
+async def get_focus_pet(pet_id: int) -> dict | None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM focus_pets WHERE pet_id=?", (pet_id,)) as c:
+            row = await c.fetchone()
+            return dict(row) if row else None
+
+
+async def get_active_focus_pet(user_id: int) -> dict | None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM focus_pets WHERE user_id=? AND active=1 LIMIT 1", (user_id,)) as c:
+            row = await c.fetchone()
+            return dict(row) if row else None
+
+
+async def set_active_focus_pet(user_id: int, pet_id: int) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE focus_pets SET active=0 WHERE user_id=?", (user_id,))
+        await db.execute("UPDATE focus_pets SET active=1 WHERE user_id=? AND pet_id=?", (user_id, pet_id))
+        await db.commit()
+
+
+async def rename_focus_pet(pet_id: int, user_id: int, name: str) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE focus_pets SET name=? WHERE pet_id=? AND user_id=?", (name, pet_id, user_id))
+        await db.commit()
+
+
+async def block_focus_channel(channel_id: int, guild_id: int) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT OR IGNORE INTO focus_blocked_channels (channel_id, guild_id) VALUES (?,?)",
+            (channel_id, guild_id),
+        )
+        await db.commit()
+
+
+async def unblock_focus_channel(channel_id: int, guild_id: int) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "DELETE FROM focus_blocked_channels WHERE channel_id=? AND guild_id=?",
+            (channel_id, guild_id),
+        )
+        await db.commit()
+
+
+async def is_focus_channel_blocked(channel_id: int, guild_id: int) -> bool:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT 1 FROM focus_blocked_channels WHERE channel_id=? AND guild_id=?",
+            (channel_id, guild_id),
+        ) as c:
+            return bool(await c.fetchone())
+
+
+async def get_focus_blocked_channels(guild_id: int) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT channel_id FROM focus_blocked_channels WHERE guild_id=? ORDER BY channel_id",
+            (guild_id,),
+        ) as c:
+            return [dict(r) for r in await c.fetchall()]
+
+
+async def get_focus_timer(vc_id: int) -> dict | None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM focus_active_timers WHERE vc_id=?", (vc_id,)) as c:
+            row = await c.fetchone()
+            return dict(row) if row else None
+
+
+async def save_focus_timer(vc_id: int, message_id: int, owner_id: int, guild_id: int, text_channel_id: int,
+                           theme: str, duration: int, break_time: int, start_time: float, end_time: float) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """INSERT OR REPLACE INTO focus_active_timers
+               (vc_id, message_id, owner_id, guild_id, text_channel_id, theme, duration, break_time, start_time, end_time)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            (vc_id, message_id, owner_id, guild_id, text_channel_id, theme, duration, break_time, start_time, end_time),
+        )
+        await db.commit()
+
+
+async def delete_focus_timer(vc_id: int) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM focus_active_timers WHERE vc_id=?", (vc_id,))
+        await db.execute("DELETE FROM focus_timer_members WHERE vc_id=?", (vc_id,))
+        await db.commit()
+
+
+async def clear_focus_timers() -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM focus_active_timers")
+        await db.execute("DELETE FROM focus_timer_members")
+        await db.commit()
+
+
+async def add_focus_timer_member(vc_id: int, user_id: int, joined_at: float) -> None:
+    await ensure_focus_user(user_id)
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT OR IGNORE INTO focus_timer_members (vc_id, user_id, joined_at) VALUES (?,?,?)",
+            (vc_id, user_id, joined_at),
+        )
+        await db.commit()
+
+
+async def remove_focus_timer_member(vc_id: int, user_id: int) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM focus_timer_members WHERE vc_id=? AND user_id=?", (vc_id, user_id))
+        await db.commit()
+
+
+async def get_focus_timer_members(vc_id: int) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM focus_timer_members WHERE vc_id=?", (vc_id,)) as c:
+            return [dict(r) for r in await c.fetchall()]
+
+
+async def log_focus_session(user_id: int, guild_id: int, vc_id: int, theme: str, duration: int, xp_earned: int, coins_earned: int) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """INSERT INTO focus_session_history
+               (user_id, guild_id, vc_id, theme, duration, xp_earned, coins_earned)
+               VALUES (?,?,?,?,?,?,?)""",
+            (user_id, guild_id, vc_id, theme, duration, xp_earned, coins_earned),
+        )
+        await db.commit()
+
+
+async def get_focus_session_history(user_id: int, limit: int = 5) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM focus_session_history WHERE user_id=? ORDER BY id DESC LIMIT ?",
+            (user_id, limit),
+        ) as c:
+            return [dict(r) for r in await c.fetchall()]
+
+
+async def get_focus_audit_log(user_id: int, guild_id: int, limit: int = 20) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM focus_audit_log WHERE user_id=? AND guild_id=? ORDER BY id DESC LIMIT ?",
+            (user_id, guild_id, limit),
+        ) as c:
+            return [dict(r) for r in await c.fetchall()]

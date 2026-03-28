@@ -1,10 +1,19 @@
 """
-utils/helpers.py — Severus Bot embed builders & utilities
-All embeds share consistent branding, colors, and footer.
+utils/helpers.py - Severus Bot embed builders and shared UI helpers.
 """
 import discord
 from datetime import datetime, timezone
 import config
+
+BRAND_NAME = getattr(config, "BOT_NAME", "Severus")
+BRAND_VERSION = getattr(config, "BOT_VERSION", "")
+BRAND_MARK = "C"
+
+
+def _brand_line() -> str:
+    if BRAND_VERSION:
+        return f"{BRAND_NAME} {BRAND_VERSION}"
+    return BRAND_NAME
 
 
 def parse_hex_color(value: str, default: int = 0x5865F2) -> int:
@@ -16,61 +25,67 @@ def parse_hex_color(value: str, default: int = 0x5865F2) -> int:
 
 
 def _footer(embed: discord.Embed, user: discord.User | discord.Member | None = None):
-    """Apply consistent Severus branding footer."""
-    text = config.FOOTER_TEXT
+    """Apply consistent footer branding and timestamp."""
+    text = config.FOOTER_TEXT or _brand_line()
     if user:
-        text = f"Requested by {user} • {config.FOOTER_TEXT}"
+        text = f"Requested by {user} | {text}"
     icon = config.FOOTER_ICON or None
     embed.set_footer(text=text, icon_url=icon)
     embed.timestamp = datetime.now(timezone.utc)
     return embed
 
 
+def _brand(embed: discord.Embed) -> discord.Embed:
+    """Apply a lightweight brand header without overriding custom thumbnails."""
+    embed.set_author(name=_brand_line(), icon_url=config.FOOTER_ICON or None)
+    return embed
+
+
 def base_embed(title: str = "", description: str = "",
                color: int = None) -> discord.Embed:
-    """Base embed with branding."""
+    """Base embed with consistent Severus branding."""
     e = discord.Embed(
         title=title,
         description=description,
         color=color or config.Colors.PRIMARY
     )
-    return _footer(e)
+    return _footer(_brand(e))
 
 
 def success_embed(title: str, description: str = "") -> discord.Embed:
     e = discord.Embed(
-        title=f"✅  {title}",
+        title=f"{BRAND_MARK} | {title}",
         description=description,
         color=config.Colors.SUCCESS
     )
-    return _footer(e)
+    return _footer(_brand(e))
 
 
 def error_embed(title: str, description: str = "") -> discord.Embed:
     e = discord.Embed(
-        title=f"❌  {title}",
+        title=f"{BRAND_MARK} | {title}",
         description=description,
         color=config.Colors.ERROR
     )
-    return _footer(e)
+    return _footer(_brand(e))
 
 
 def warning_embed(title: str, description: str = "") -> discord.Embed:
     e = discord.Embed(
-        title=f"⚠️  {title}",
+        title=f"{BRAND_MARK} | {title}",
         description=description,
         color=config.Colors.WARN
     )
-    return _footer(e)
+    return _footer(_brand(e))
 
 
 def info_embed(title: str, description: str = "") -> discord.Embed:
     e = discord.Embed(
-        title=f"ℹ️  {title}",
+        title=f"{BRAND_MARK} | {title}",
         description=description,
         color=config.Colors.INFO
     )
-    return _footer(e)
+    return _footer(_brand(e))
 
 
 def mod_embed(action: str, target: discord.Member,
@@ -85,7 +100,7 @@ def mod_embed(action: str, target: discord.Member,
     e.add_field(name="👤 Target",     value=f"{target.mention}\n`{target}` (`{target.id}`)", inline=True)
     e.add_field(name="🛡️ Moderator", value=moderator.mention,                                inline=True)
     e.add_field(name="📋 Reason",     value=reason,                                           inline=False)
-    return _footer(e, moderator)
+    return _footer(_brand(e), moderator)
 
 
 def music_embed(title: str, description: str = "",
@@ -98,7 +113,7 @@ def music_embed(title: str, description: str = "",
     )
     if thumbnail:
         e.set_thumbnail(url=thumbnail)
-    return _footer(e)
+    return _footer(_brand(e))
 
 
 async def send_log(guild: discord.Guild, channel_id: int,

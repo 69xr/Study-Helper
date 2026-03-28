@@ -1,0 +1,32 @@
+{% extends "public_page.html" %}
+{% block title %}Contact | {{ brand.name }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="kicker">Contact</div>
+  <h1>Reach the operator behind the control surface.</h1>
+  <p>{{ brand.contact_blurb }}</p>
+  <div class="hero-actions">
+    <a class="cta primary" href="mailto:{{ brand.contact_email }}">Email {{ brand.contact_email }}</a>
+    <a class="cta ghost" href="{{ brand.support_discord_url }}" target="_blank" rel="noreferrer">Discord Profile</a>
+  </div>
+</section>
+<section class="panel-grid">
+  <div class="card">
+    <h2>Good Reasons To Reach Out</h2>
+    <div class="list">
+      <div class="item">Support escalations that need a direct owner response</div>
+      <div class="item">Feature requests, integration requests, or deployment help</div>
+      <div class="item">Bug reports with logs, screenshots, or reproducible steps</div>
+      <div class="item">Branding and configuration changes for your dashboard setup</div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Primary Contact</h2>
+    <div class="list">
+      <div class="item"><strong>Contact email:</strong> {{ brand.contact_email }}</div>
+      <div class="item"><strong>Support email:</strong> {{ brand.support_email }}</div>
+      <div class="item"><strong>Owner ID:</strong> {{ brand.owner_id }}</div>
+    </div>
+  </div>
+</section>
+{% endblock %}

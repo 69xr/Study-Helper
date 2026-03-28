@@ -5,112 +5,112 @@
 {% block head %}<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>{% endblock %}
 
 {% block content %}
-<!-- PAGE HEADER -->
 <div class="ph">
   <div class="ph-left">
     <h1>{{ guild.get('name','Server') }}</h1>
-    <p>Welcome back, <strong>{{ user.username }}</strong> — here's your server at a glance.</p>
+    <p>Operations cockpit for {{ user.username }} with live server health, usage, moderation pressure, and fast admin exits.</p>
   </div>
   <div class="ph-right">
-    <button class="btn btn-ghost btn-sm" onclick="refreshAll()">⟳ Refresh</button>
-    <a href="{{ url_for('guild_settings',guild_id=guild_id) }}" class="btn btn-primary btn-sm">⚙ Settings</a>
+    <button class="btn btn-ghost btn-sm" onclick="refreshAll()">Refresh</button>
+    <a href="{{ url_for('guild_settings',guild_id=guild_id) }}" class="btn btn-primary btn-sm">Open Settings</a>
   </div>
 </div>
 
-<!-- STAT CARDS -->
+<div class="card" style="margin-bottom:16px;overflow:hidden;background:linear-gradient(135deg,color-mix(in srgb, var(--brand) 16%, var(--panel)) 0%, var(--panel) 42%, color-mix(in srgb, var(--violet) 16%, var(--panel)) 100%)">
+  <div class="card-body" style="display:grid;grid-template-columns:1.2fr .8fr;gap:18px;align-items:center">
+    <div>
+      <div class="badge bx" style="margin-bottom:10px">Main Page</div>
+      <div style="font-family:var(--head);font-size:30px;line-height:1.02">Sharper server control without dashboard clutter.</div>
+      <div style="margin-top:10px;color:var(--t2);font-size:14px;max-width:720px">Jump from live signals into moderation, embeds, focus systems, support, and server settings without hunting through flat menus.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+        <a href="{{ url_for('support_page') }}" class="btn btn-ghost btn-sm">Support</a>
+        <a href="{{ url_for('contact_page') }}" class="btn btn-ghost btn-sm">Contact</a>
+        <a href="{{ url_for('policy_page') }}" class="btn btn-ghost btn-sm">Policy</a>
+        <a href="{{ url_for('music',guild_id=guild_id) }}" class="btn btn-primary btn-sm">Music Ops</a>
+      </div>
+    </div>
+    <div style="display:grid;gap:10px">
+      <div class="kv-row"><span class="kv-key">Brand file</span><span class="id-tag">dashboard/branding.py</span></div>
+      <div class="kv-row"><span class="kv-key">Support email</span><span class="id-tag">{{ brand.support_email }}</span></div>
+      <div class="kv-row"><span class="kv-key">Contact email</span><span class="id-tag">{{ brand.contact_email }}</span></div>
+      <div class="kv-row"><span class="kv-key">Dashboard URL</span><span class="id-tag">{{ brand.dashboard_url }}</span></div>
+    </div>
+  </div>
+</div>
+
 <div class="sc-row">
-  <div class="sc sc-x">
-    <div class="sc-top"><span class="sc-icon">⚠️</span><span class="sc-badge sc-badge-red">ACTIVE</span></div>
+  <div class="sc">
     <div class="sc-val" id="stat-w">{{ warn_count }}</div>
     <div class="sc-lbl">Warnings</div>
-    <div class="sc-sub">This server</div>
+    <div class="sc-sub">Recorded for this server</div>
   </div>
-  <div class="sc sc-green">
-    <div class="sc-top"><span class="sc-icon">⚡</span><span class="sc-badge sc-badge-green">LIVE</span></div>
+  <div class="sc">
     <div class="sc-val" id="stat-c">{{ cmd_count }}</div>
     <div class="sc-lbl">Commands Run</div>
-    <div class="sc-sub">All time</div>
+    <div class="sc-sub">Total tracked usage</div>
   </div>
-  <div class="sc sc-violet">
-    <div class="sc-top"><span class="sc-icon">🎭</span><span class="sc-badge sc-badge-x">SET</span></div>
+  <div class="sc">
     <div class="sc-val" id="stat-p">{{ panel_count }}</div>
     <div class="sc-lbl">Role Panels</div>
-    <div class="sc-sub">Active panels</div>
+    <div class="sc-sub">Live assignment panels</div>
   </div>
-  <div class="sc sc-red">
-    <div class="sc-top"><span class="sc-icon">⊘</span><span class="sc-badge sc-badge-red">LIST</span></div>
+  <div class="sc">
     <div class="sc-val" id="stat-bl">{{ bl_count }}</div>
     <div class="sc-lbl">Blacklisted</div>
-    <div class="sc-sub">Banned users</div>
+    <div class="sc-sub">Global blocked users</div>
   </div>
-  <div class="sc sc-blue">
-    <div class="sc-top"><span class="sc-icon">👥</span><span class="sc-badge sc-badge-x">LIVE</span></div>
-    <div class="sc-val" id="ss-members">—</div>
+  <div class="sc">
+    <div class="sc-val" id="ss-members">-</div>
     <div class="sc-lbl">Members</div>
-    <div class="sc-sub" id="ss-online-sub">— online</div>
+    <div class="sc-sub" id="ss-online-sub">- online</div>
   </div>
-  <div class="sc sc-amber">
-    <div class="sc-top"><span class="sc-icon">💎</span><span class="sc-badge sc-badge-amber">TIER</span></div>
-    <div class="sc-val" id="ss-tier">—</div>
+  <div class="sc">
+    <div class="sc-val" id="ss-tier">-</div>
     <div class="sc-lbl">Boost Tier</div>
-    <div class="sc-sub" id="ss-boosts">— boosts</div>
+    <div class="sc-sub" id="ss-boosts">- boosts</div>
   </div>
 </div>
 
-<!-- BOT STATUS BAR -->
-<div style="background:var(--layer);border:1px solid var(--b1);border-radius:var(--r2);padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:7px">
-      <span style="font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px">Bot Status</span>
-      <span class="badge bgreen" id="bot-status-badge">● Online</span>
+<div class="card" style="margin-bottom:16px">
+  <div class="card-body" style="display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap">
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      <span class="badge bgreen" id="bot-status-badge">Online</span>
+      <span class="badge bmuted" id="latency-badge">- ms</span>
+      <span class="badge bamber" id="ss-verify">Verification -</span>
+      <span class="badge bx" id="automod-status-badge">AutoMod -</span>
     </div>
-    <div style="display:flex;align-items:center;gap:7px">
-      <span style="font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px">Latency</span>
-      <span class="badge bmuted" id="latency-badge">—ms</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:7px">
-      <span style="font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px">Verification</span>
-      <span class="badge bamber" id="ss-verify">—</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:7px">
-      <span style="font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px">AutoMod</span>
-      <span class="badge" id="automod-status-badge">—</span>
-    </div>
+    <span id="stats-refresh-ts" style="font-family:var(--mono);font-size:10px;color:var(--t3)">Fetching live stats</span>
   </div>
-  <span id="stats-refresh-ts" style="font-family:var(--mono);font-size:9px;color:var(--t3)">Fetching…</span>
 </div>
 
-<!-- COMMAND CHART -->
 {% if sparkline %}
-<div class="card" style="margin-bottom:14px">
+<div class="card" style="margin-bottom:16px">
   <div class="card-head">
-    <div class="card-title"><span class="ct-dot" style="background:var(--x)"></span>7-Day Command Activity</div>
-    <span class="badge bx">LIVE CHART</span>
+    <div class="card-title">7-Day Command Activity</div>
+    <span class="badge bx">Usage Trend</span>
   </div>
-  <div class="card-body" style="padding-top:8px">
-    <canvas id="sparkChart" height="55"></canvas>
+  <div class="card-body" style="padding-top:10px">
+    <canvas id="sparkChart" height="60"></canvas>
   </div>
 </div>
 {% endif %}
 
-<!-- MAIN GRID -->
 <div class="g2">
-  <!-- Recent Warnings -->
   <div class="card">
     <div class="card-head">
-      <div class="card-title"><span class="ct-dot" style="background:var(--red)"></span>Recent Warnings</div>
-      <a href="{{ url_for('moderation',guild_id=guild_id) }}" class="btn btn-ghost btn-xs">View all →</a>
+      <div class="card-title">Recent Warnings</div>
+      <a href="{{ url_for('moderation',guild_id=guild_id) }}" class="btn btn-ghost btn-xs">Open Moderation</a>
     </div>
     {% if recent_warns %}
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>#</th><th>User</th><th>Reason</th><th>Date</th></tr></thead>
+        <thead><tr><th>ID</th><th>User</th><th>Reason</th><th>Date</th></tr></thead>
         <tbody>
         {% for w in recent_warns %}
         <tr>
           <td><span class="id-tag">{{ w.id }}</span></td>
           <td><span class="mtag">{{ w.user_id }}</span></td>
-          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t1)">{{ w.reason }}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t1)">{{ w.reason }}</td>
           <td><span class="mtag">{{ w.created_at[:10] }}</span></td>
         </tr>
         {% endfor %}
@@ -118,108 +118,115 @@
       </table>
     </div>
     {% else %}
-    <div class="empty"><div class="empty-ico">✓</div><div class="empty-title">Clean Record</div><div class="empty-sub">No warnings issued yet.</div></div>
+    <div class="empty"><div class="empty-title">No warnings yet</div><div class="empty-sub">This server currently has a clean moderation queue.</div></div>
     {% endif %}
   </div>
 
-  <!-- Top Commands -->
   <div class="card">
     <div class="card-head">
-      <div class="card-title"><span class="ct-dot" style="background:var(--amber)"></span>Top Commands</div>
-      <a href="{{ url_for('analytics',guild_id=guild_id) }}" class="btn btn-ghost btn-xs">Analytics →</a>
+      <div class="card-title">Top Commands</div>
+      <a href="{{ url_for('analytics',guild_id=guild_id) }}" class="btn btn-ghost btn-xs">Open Analytics</a>
     </div>
-    {% if top_cmds %}
-    {% set mx = top_cmds[0].uses %}
-    {% for c in top_cmds %}
-    <div class="cmd-row">
-      <span class="cmd-rank {% if loop.index==1 %}gold{% elif loop.index==2 %}silver{% elif loop.index==3 %}bronze{% endif %}">{{ loop.index }}</span>
-      <span class="cmd-name">/{{ c.command }}</span>
-      <div style="flex:1"><div class="pbar-wrap"><div class="pbar-fill" style="width:{{ (c.uses/mx*100)|int }}%"></div></div></div>
-      <span class="mtag" style="font-size:10px;width:40px;text-align:right">{{ c.uses }}</span>
+    <div class="card-body">
+      {% if top_cmds %}
+      {% set max_uses = top_cmds[0].uses %}
+      <div style="display:grid;gap:10px">
+        {% for c in top_cmds %}
+        <div>
+          <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:6px">
+            <span style="font-weight:700;color:var(--t1)">/{{ c.command }}</span>
+            <span class="mtag">{{ c.uses }}</span>
+          </div>
+          <div style="height:10px;border-radius:999px;background:var(--layer2);overflow:hidden">
+            <div style="height:100%;width:{{ (c.uses / max_uses * 100)|int }}%;background:linear-gradient(135deg,var(--brand),var(--violet));border-radius:999px"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty" style="padding:28px 14px"><div class="empty-title">No command data</div><div class="empty-sub">Usage analytics will appear after the bot is used in this server.</div></div>
+      {% endif %}
     </div>
-    {% endfor %}
-    {% else %}
-    <div class="empty"><div class="empty-ico">⚡</div><div class="empty-title">No Data Yet</div><div class="empty-sub">Commands will appear here once used.</div></div>
-    {% endif %}
   </div>
 </div>
 
-<!-- SECOND ROW -->
 <div class="g2" style="margin-top:0">
-  <!-- Audit Events -->
   <div class="card">
     <div class="card-head">
-      <div class="card-title"><span class="ct-dot" style="background:var(--blue)"></span>Recent Audit Events</div>
-      <a href="{{ url_for('audit_log',guild_id=guild_id) }}" class="btn btn-ghost btn-xs">View all →</a>
+      <div class="card-title">Recent Audit Events</div>
+      <a href="{{ url_for('audit_log',guild_id=guild_id) }}" class="btn btn-ghost btn-xs">Open Audit Log</a>
     </div>
-    {% set ac = {'KICK':'bamber','BAN':'bred','WARN':'bamber','ANNOUNCE':'bx','UNBAN':'bgreen','MUTE':'bamber','TIMEOUT':'bamber','CLEAR':'bblue','SLOWMODE':'bmuted'} %}
-    {% if recent_audit %}
-    {% for r in recent_audit %}
-    <div class="audit-row">
-      <span class="audit-ts">{{ r.created_at[5:16] }}</span>
-      <span class="badge {{ ac.get(r.action,'bmuted') }}">{{ r.action }}</span>
-      <span class="audit-detail" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.reason or 'No reason' }}</span>
+    <div class="card-body">
+      {% if recent_audit %}
+      <div style="display:grid;gap:10px">
+        {% for r in recent_audit %}
+        <div style="display:grid;gap:4px;padding:12px 14px;background:var(--layer);border:1px solid var(--line);border-radius:14px">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+            <span class="badge {{ 'bred' if r.action in ['BAN'] else 'bamber' if r.action in ['WARN','KICK','TIMEOUT','MUTE'] else 'bx' }}">{{ r.action }}</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--t3)">{{ r.created_at[:16] }}</span>
+          </div>
+          <div style="color:var(--t2);font-size:13px">{{ r.reason or 'No reason recorded.' }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty" style="padding:28px 14px"><div class="empty-title">No audit events yet</div><div class="empty-sub">Operational activity will appear here as moderators act.</div></div>
+      {% endif %}
     </div>
-    {% endfor %}
-    {% else %}
-    <div class="empty" style="padding:28px"><div class="empty-ico">🗒</div><div class="empty-sub">No audit events yet.</div></div>
-    {% endif %}
   </div>
 
-  <!-- Config Health -->
   <div class="card">
     <div class="card-head">
-      <div class="card-title"><span class="ct-dot" style="background:var(--green)"></span>Config Health</div>
-      <a href="{{ url_for('guild_settings',guild_id=guild_id) }}" class="btn btn-ghost btn-xs">Edit →</a>
+      <div class="card-title">Configuration Health</div>
+      <a href="{{ url_for('guild_settings',guild_id=guild_id) }}" class="btn btn-ghost btn-xs">Review Settings</a>
     </div>
     <div class="card-body">
       {% set checks = [
-        ('🪵 Log Channel',     settings.get('log_channel')),
-        ('👋 Welcome Channel', settings.get('welcome_channel')),
-        ('💬 Welcome Message', settings.get('welcome_msg')),
-        ('🔇 Mute Role',       settings.get('mute_role')),
-        ('✅ Verify Role',     settings.get('verify_role')),
-        ('🔊 Temp Room Setup', settings.get('temp_room_channel')),
+        ('Log Channel', settings.get('log_channel')),
+        ('Welcome Channel', settings.get('welcome_channel')),
+        ('Welcome Message', settings.get('welcome_msg')),
+        ('Mute Role', settings.get('mute_role')),
+        ('Verify Role', settings.get('verify_role')),
+        ('Auto Roles', settings.get('auto_roles')),
       ] %}
-      {% for label, val in checks %}
-      <div class="kv-row">
-        <span class="kv-key">{{ label }}</span>
-        {% if val %}<span class="badge bgreen">✓ Set</span>{% else %}<span class="badge bred">✕ Missing</span>{% endif %}
-      </div>
-      {% endfor %}
-
-      <!-- Overall score -->
       {% set score = checks | selectattr('1') | list | length %}
-      <div style="margin-top:12px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-          <span style="font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px">Health Score</span>
-          <span style="font-family:var(--mono);font-size:9px;color:{% if score >= 5 %}var(--green){% elif score >= 3 %}var(--amber){% else %}var(--red){% endif %}">{{ score }}/{{ checks|length }}</span>
+      <div style="display:grid;gap:10px">
+        {% for label, val in checks %}
+        <div class="kv-row">
+          <span class="kv-key">{{ label }}</span>
+          {% if val %}<span class="badge bgreen">Configured</span>{% else %}<span class="badge bred">Missing</span>{% endif %}
         </div>
-        <div class="pbar-wrap">
-          <div class="pbar-fill {% if score >= 5 %}pbar-green{% elif score >= 3 %}pbar-amber{% else %}pbar-red{% endif %}" style="width:{{ (score / checks|length * 100)|int }}%"></div>
+        {% endfor %}
+      </div>
+      <div style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:6px">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--t3)">Setup Score</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--t1)">{{ score }}/{{ checks|length }}</span>
+        </div>
+        <div style="height:10px;border-radius:999px;background:var(--layer2);overflow:hidden">
+          <div style="height:100%;width:{{ (score / checks|length * 100)|int }}%;background:linear-gradient(135deg,var(--green),var(--brand));border-radius:999px"></div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- QUICK ACTIONS -->
 <div class="card">
   <div class="card-head">
-    <div class="card-title"><span class="ct-dot" style="background:var(--violet)"></span>Quick Actions</div>
+    <div class="card-title">Quick Actions</div>
   </div>
   <div class="card-body" style="display:flex;flex-wrap:wrap;gap:8px">
-    <a href="{{ url_for('moderation',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">🛡 View Warnings</a>
-    <a href="{{ url_for('automod',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">🤖 AutoMod Config</a>
-    <a href="{{ url_for('embed_builder',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">🎨 Build Embed</a>
-    <a href="{{ url_for('announcements',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">📢 Announce</a>
-    <a href="{{ url_for('blacklist',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">⊘ Blacklist</a>
-    <a href="{{ url_for('role_panels',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">◎ Role Panels</a>
-    <a href="{{ url_for('audit_log',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">🗒 Full Audit Log</a>
-    <a href="{{ url_for('members',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">👥 Member List</a>
+    <a href="{{ url_for('moderation',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">Warnings</a>
+    <a href="{{ url_for('automod',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">AutoMod</a>
+    <a href="{{ url_for('embed_builder',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">Embed Builder</a>
+    <a href="{{ url_for('announcements',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">Announcements</a>
+    <a href="{{ url_for('role_panels',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">Role Panels</a>
+    <a href="{{ url_for('members',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">Members</a>
+    <a href="{{ url_for('user_search',guild_id=guild_id) }}" class="btn btn-ghost btn-sm">Search</a>
+    <a href="{{ url_for('contact_page') }}" class="btn btn-ghost btn-sm">Contact</a>
+    <a href="{{ url_for('support_page') }}" class="btn btn-ghost btn-sm">Support</a>
   </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
@@ -227,70 +234,78 @@
 const GUILD = '{{ guild_id }}';
 const VERIFY_LEVELS = ['None','Low','Medium','High','Highest'];
 
-/* Chart */
+function chartColors(){
+  const s = getComputedStyle(document.documentElement);
+  return {
+    brand: s.getPropertyValue('--brand').trim(),
+    violet: s.getPropertyValue('--violet').trim(),
+    muted: s.getPropertyValue('--t3').trim(),
+    line: s.getPropertyValue('--line').trim(),
+    panel: s.getPropertyValue('--panel').trim()
+  };
+}
+
 {% if sparkline %}
 const spark = {{ sparkline | tojson }};
-const ctx = document.getElementById('sparkChart').getContext('2d');
-const grad = ctx.createLinearGradient(0,0,0,55);
-grad.addColorStop(0,'rgba(122,112,255,.35)');
-grad.addColorStop(1,'rgba(122,112,255,.02)');
-new Chart(ctx, {
+const sparkCtx = document.getElementById('sparkChart').getContext('2d');
+const palette = chartColors();
+const sparkGrad = sparkCtx.createLinearGradient(0,0,0,60);
+sparkGrad.addColorStop(0, palette.brand + '66');
+sparkGrad.addColorStop(1, palette.violet + '12');
+new Chart(sparkCtx, {
   type:'bar',
-  data:{ labels:spark.map(d=>d.day.slice(5)), datasets:[{ data:spark.map(d=>d.uses), backgroundColor:grad, borderColor:'#7a70ff', borderWidth:1.5, borderRadius:5, hoverBackgroundColor:'rgba(168,158,255,.5)' }] },
-  options:{ responsive:true, plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#111430', borderColor:'#1e2348', borderWidth:1, titleColor:'#e8eaff', bodyColor:'#7a82b8', titleFont:{family:'JetBrains Mono',size:10}, bodyFont:{family:'JetBrains Mono',size:10} } },
-    scales:{ x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#3d4470',font:{family:'JetBrains Mono',size:9}}}, y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#3d4470',font:{family:'JetBrains Mono',size:9}},beginAtZero:true} }
+  data:{ labels:spark.map(d=>d.day.slice(5)), datasets:[{ data:spark.map(d=>d.uses), backgroundColor:sparkGrad, borderColor:palette.brand, borderWidth:1.5, borderRadius:6 }] },
+  options:{
+    responsive:true,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ grid:{color:palette.line}, ticks:{color:palette.muted,font:{family:'JetBrains Mono',size:9}} },
+      y:{ grid:{color:palette.line}, ticks:{color:palette.muted,font:{family:'JetBrains Mono',size:9}}, beginAtZero:true }
+    }
   }
 });
 {% endif %}
 
-/* Live stats */
-setInterval(async()=>{
+async function refreshCoreStats(){
   const d = await fetch(`/api/${GUILD}/live-stats`).then(r=>r.json()).catch(()=>({}));
-  if(d.total_warns!==undefined) document.getElementById('stat-w').textContent=d.total_warns;
-  if(d.bl_count!==undefined)   document.getElementById('stat-bl').textContent=d.bl_count;
-  if(d.total_cmds!==undefined) document.getElementById('stat-c').textContent=d.total_cmds.toLocaleString();
-},30000);
+  if(d.total_warns!==undefined) document.getElementById('stat-w').textContent = d.total_warns;
+  if(d.bl_count!==undefined) document.getElementById('stat-bl').textContent = d.bl_count;
+  if(d.total_cmds!==undefined) document.getElementById('stat-c').textContent = Number(d.total_cmds).toLocaleString();
+}
 
-/* Discord server stats */
 async function fetchServerStats() {
   try {
     const d = await fetch(`/api/${GUILD}/discord-stats`).then(r=>r.json());
-    if (!d.ok) { document.getElementById('stats-refresh-ts').textContent = 'Error fetching stats'; return; }
-    document.getElementById('ss-members').textContent = (d.member_count||0).toLocaleString();
-    document.getElementById('ss-online-sub').textContent = (d.online_count||0).toLocaleString() + ' online';
-    document.getElementById('ss-tier').textContent = 'T' + (d.boost_tier||0);
-    document.getElementById('ss-boosts').textContent = (d.boost_count||0) + ' boosts';
-    document.getElementById('ss-verify').textContent = VERIFY_LEVELS[d.verification_level||0]||'Unknown';
-    document.getElementById('stats-refresh-ts').textContent = 'Updated ' + new Date().toLocaleTimeString();
-  } catch(e) {
-    document.getElementById('stats-refresh-ts').textContent = 'Bot offline';
+    if (!d.ok) {
+      document.getElementById('stats-refresh-ts').textContent = 'Live server stats unavailable';
+      return;
+    }
+    document.getElementById('ss-members').textContent = Number(d.member_count || 0).toLocaleString();
+    document.getElementById('ss-online-sub').textContent = `${Number(d.online_count || 0).toLocaleString()} online`;
+    document.getElementById('ss-tier').textContent = d.premium_tier ?? '-';
+    document.getElementById('ss-boosts').textContent = `${d.premium_subscription_count || 0} boosts`;
+    document.getElementById('ss-verify').textContent = `Verification ${VERIFY_LEVELS[d.verification_level || 0] || '-'}`;
+    document.getElementById('automod-status-badge').textContent = d.automod_enabled ? 'AutoMod Enabled' : 'AutoMod Disabled';
+    document.getElementById('automod-status-badge').className = `badge ${d.automod_enabled ? 'bgreen' : 'bmuted'}`;
+    document.getElementById('stats-refresh-ts').textContent = `Updated ${new Date().toLocaleTimeString('en-GB')}`;
+  } catch (_) {
+    document.getElementById('stats-refresh-ts').textContent = 'Live server stats unavailable';
   }
 }
 
-/* Bot status */
-async function fetchBotStatus() {
-  try {
-    const d = await fetch('/api/bot-status').then(r=>r.json());
-    const badge = document.getElementById('bot-status-badge');
-    const latBadge = document.getElementById('latency-badge');
-    if (d.online) {
-      badge.className='badge bgreen'; badge.textContent='● Online';
-      latBadge.textContent = d.latency_ms + 'ms';
-    } else {
-      badge.className='badge bred'; badge.textContent='● Offline';
-    }
-  } catch(e){}
+async function fetchBotStatus(){
+  const d = await fetch('/api/bot-status').then(r=>r.json()).catch(()=>({online:false}));
+  document.getElementById('bot-status-badge').textContent = d.online ? 'Online' : 'Offline';
+  document.getElementById('bot-status-badge').className = `badge ${d.online ? 'bgreen' : 'bred'}`;
+  document.getElementById('latency-badge').textContent = d.online ? `${d.latency_ms} ms` : '- ms';
 }
 
-function refreshAll() {
-  fetchServerStats();
-  fetchBotStatus();
-  toast('Refreshing stats…','info',1500);
+async function refreshAll(){
+  await Promise.all([refreshCoreStats(), fetchServerStats(), fetchBotStatus()]);
+  toast('Overview refreshed');
 }
 
-fetchServerStats();
-fetchBotStatus();
-setInterval(fetchServerStats, 60000);
-setInterval(fetchBotStatus, 30000);
+refreshAll();
+setInterval(refreshAll, 30000);
 </script>
 {% endblock %}

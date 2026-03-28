@@ -6,6 +6,7 @@ from discord.ext import commands
 import asyncio, logging, os, sys, traceback
 import config
 from utils import db
+from utils.focus_image_engine import ImageEngine
 
 # ═══════════════════════════════════════════════════════════════
 #  LOGGING
@@ -61,6 +62,7 @@ COGS = [
     "cogs.moderation.notes",
     "cogs.moderation.thresholds",
     "cogs.roles.panels",
+    "cogs.settings.config",
     "cogs.settings.aliases",
     "cogs.automod",
     "cogs.logging.logger",
@@ -69,8 +71,10 @@ COGS = [
     "cogs.community.custom_commands",
     "cogs.community.autoroles",
     "cogs.community.polls",
-    "cogs.community.giveaways",
     "cogs.community.starboard",
+    "cogs.focus.timer",
+    "cogs.focus.profile",
+    "cogs.focus.pets",
     "cogs.music.player",
     "cogs.music.lyrics",
     "cogs.security.security",
@@ -90,6 +94,8 @@ class Bot(commands.Bot):
             owner_id=config.OWNER_ID,
             help_command=None,
         )
+        self.canonical_cogs = tuple(COGS)
+        self.focus_image_engine = ImageEngine()
 
     async def setup_hook(self):
         os.makedirs(config.DATA_DIR, exist_ok=True)
@@ -97,6 +103,8 @@ class Bot(commands.Bot):
         # 1. Database
         await db.init_db()
         await db.init_new_tables()
+        await db.cleanup_removed_features()
+        await db.clear_focus_timers()
         log.info("Database ready.")
 
         # 2. Load every cog — each cog's setup() calls bot.add_cog()
@@ -105,7 +113,7 @@ class Bot(commands.Bot):
         for cog in COGS:
             try:
                 await self.load_extension(cog)
-                log.info(f"  ✅  {cog}")
+                log.info(f"  OK  {cog}")
             except Exception as e:
                 log.error(f"  ❌  {cog}: {e}\n{traceback.format_exc()}")
                 failed.append(cog)
@@ -120,34 +128,33 @@ class Bot(commands.Bot):
         # 4. Global blacklist check on every interaction
         self.tree.interaction_check = self.interaction_check_global
 
-        # 5. Sync slash commands to Discord.
-        #
-        #    HOW THIS WORKS:
-        #    - self.tree now contains every command registered by the cogs above.
-        #    - tree.sync() sends that full list to Discord's API.
-        #    - Discord REPLACES its stored list with whatever we send — so any
-        #      commands we previously had that are no longer in the tree are
-        #      automatically removed. No manual clearing needed.
-        #    - DO NOT call tree.clear_commands() before sync() — that empties the
-        #      local tree so sync() would push an empty list, deleting all commands.
-        #
-        log.info("Syncing slash commands with Discord…")
+        if self.application_id:
+            await self._sync_application_commands()
+        else:
+            log.info("Skipping slash-command sync because application_id is not ready yet.")
+
+    async def _sync_application_commands(self) -> None:
+        """Sync global commands and remove stale dev-guild overrides."""
+        log.info("Syncing slash commands with Discord...")
         try:
             synced = await self.tree.sync()
-            log.info(f"✅  Global sync complete: {len(synced)} command(s) registered.")
+            log.info(f"OK  Global sync complete: {len(synced)} command(s) registered.")
         except discord.HTTPException as e:
             log.error(f"Global sync failed: {e}")
+            return
 
-        # 6. Dev guild instant sync (optional — instant propagation for testing)
         dev_guild_id = getattr(config, "DEV_GUILD_ID", None)
-        if dev_guild_id:
-            try:
-                dev_guild = discord.Object(id=int(dev_guild_id))
-                self.tree.copy_global_to(guild=dev_guild)
-                synced_dev = await self.tree.sync(guild=dev_guild)
-                log.info(f"⚡  Dev guild instant sync: {len(synced_dev)} command(s).")
-            except Exception as e:
-                log.warning(f"Dev guild sync failed: {e}")
+        if not dev_guild_id:
+            return
+
+        try:
+            dev_guild = discord.Object(id=int(dev_guild_id))
+            # Clear old guild-scoped copies so the dev server only shows the global commands.
+            self.tree.clear_commands(guild=dev_guild)
+            await self.tree.sync(guild=dev_guild)
+            log.info("OK  Cleared dev guild-specific slash command overrides.")
+        except Exception as e:
+            log.warning(f"Dev guild cleanup failed: {e}")
 
     # ── Persistent view restore ───────────────────────────────
 
