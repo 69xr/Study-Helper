@@ -17,3 +17,9 @@
 {"ts": "22:07:40", "level": "CMD", "msg": "/play \u2192 67xe in Cave", "guild_id": "1104701279005069334", "extra": {}}
 {"ts": "22:08:28", "level": "CMD", "msg": "/focusrank \u2192 67xe in Cave", "guild_id": "1104701279005069334", "extra": {}}
 {"ts": "22:17:51", "level": "SUCCESS", "msg": "IPC bridge online \u2014 mOoN#1384", "guild_id": null, "extra": {}}
+{"ts": "22:43:37", "level": "SUCCESS", "msg": "IPC bridge online \u2014 mOoN#1384", "guild_id": null, "extra": {}}
+{"ts": "22:46:15", "level": "INFO", "msg": "Deleted in #3ooooooooo: 'a'", "guild_id": "1104701279005069334", "extra": {}}
+{"ts": "22:46:44", "level": "CMD", "msg": "/play \u2192 67xe in Cave", "guild_id": "1104701279005069334", "extra": {}}
+{"ts": "22:47:40", "level": "CMD", "msg": "/timer \u2192 67xe in Cave", "guild_id": "1104701279005069334", "extra": {}}
+{"ts": "22:48:02", "level": "CMD", "msg": "/help \u2192 67xe in Cave", "guild_id": "1104701279005069334", "extra": {}}
+{"ts": "22:48:08", "level": "CMD", "msg": "/play \u2192 67xe in Cave", "guild_id": "1104701279005069334", "extra": {}}

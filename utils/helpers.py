@@ -7,7 +7,7 @@ import config
 
 BRAND_NAME = getattr(config, "BOT_NAME", "Severus")
 BRAND_VERSION = getattr(config, "BOT_VERSION", "")
-BRAND_MARK = "C"
+BRAND_MARK = "⚡"
 
 
 def _brand_line() -> str:

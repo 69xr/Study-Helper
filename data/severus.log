@@ -866,3 +866,89 @@ discord.app_commands.errors.CommandInvokeError: Command 'timer' raised an except
 00:21:17 [INFO    ] severus: Restored 0 role panel view(s).
 00:21:17 [INFO    ] severus: VerifyView restored.
 00:21:17 [INFO    ] severus: Skipping slash-command sync because application_id is not ready yet.
+00:43:33 [INFO    ] severus: Database ready.
+00:43:33 [INFO    ] severus:   OK  cogs.general.ping
+00:43:33 [INFO    ] severus:   OK  cogs.general.avatar
+00:43:33 [INFO    ] severus:   OK  cogs.general.uptime
+00:43:33 [INFO    ] severus:   OK  cogs.general.serverinfo
+00:43:33 [INFO    ] severus:   OK  cogs.general.userinfo
+00:43:33 [INFO    ] severus:   OK  cogs.general.snipe
+00:43:33 [INFO    ] severus:   OK  cogs.general.help
+00:43:33 [INFO    ] severus:   OK  cogs.general.reminders
+00:43:33 [INFO    ] severus:   OK  cogs.general.afk
+00:43:33 [INFO    ] severus:   OK  cogs.moderation.kick
+00:43:33 [INFO    ] severus:   OK  cogs.moderation.ban
+00:43:33 [INFO    ] severus:   OK  cogs.moderation.warn
+00:43:33 [INFO    ] severus:   OK  cogs.moderation.clear
+00:43:33 [INFO    ] severus:   OK  cogs.moderation.mute
+00:43:33 [INFO    ] severus:   OK  cogs.moderation.slowmode
+00:43:33 [INFO    ] severus:   OK  cogs.moderation.timeout
+00:43:33 [INFO    ] severus:   OK  cogs.moderation.notes
+00:43:33 [INFO    ] severus:   OK  cogs.moderation.thresholds
+00:43:33 [INFO    ] severus:   OK  cogs.roles.panels
+00:43:33 [INFO    ] severus:   OK  cogs.settings.config
+00:43:33 [INFO    ] severus:   OK  cogs.settings.aliases
+00:43:33 [INFO    ] severus:   OK  cogs.automod
+00:43:33 [INFO    ] severus:   OK  cogs.logging.logger
+00:43:33 [INFO    ] severus:   OK  cogs.temprooms.rooms
+00:43:33 [INFO    ] severus:   OK  cogs.temprooms.invite
+00:43:33 [INFO    ] severus:   OK  cogs.community.custom_commands
+00:43:33 [INFO    ] severus:   OK  cogs.community.autoroles
+00:43:33 [INFO    ] severus:   OK  cogs.community.polls
+00:43:33 [INFO    ] severus:   OK  cogs.community.starboard
+00:43:33 [INFO    ] severus:   OK  cogs.focus.timer
+00:43:33 [INFO    ] severus:   OK  cogs.focus.profile
+00:43:33 [INFO    ] severus:   OK  cogs.focus.pets
+00:43:34 [INFO    ] severus:   OK  cogs.music.player
+00:43:34 [INFO    ] severus:   OK  cogs.music.lyrics
+00:43:34 [INFO    ] severus:   OK  cogs.security.security
+00:43:34 [INFO    ] severus:   OK  cogs.owner
+00:43:34 [INFO    ] severus:   OK  cogs.ipc_bridge
+00:43:34 [INFO    ] severus: Restored 0 role panel view(s).
+00:43:34 [INFO    ] severus: VerifyView restored.
+00:43:34 [INFO    ] severus: Syncing slash commands with Discord...
+00:43:34 [INFO    ] severus: OK  Global sync complete: 86 command(s) registered.
+00:43:35 [INFO    ] severus: OK  Cleared dev guild-specific slash command overrides.
+00:43:37 [INFO    ] severus: ====================================================
+00:43:37 [INFO    ] severus:   🤖  Logged in as mOoN#1384  (1317208885521813615)
+00:43:37 [INFO    ] severus:   📡  Connected to 1 guild(s)
+00:43:37 [INFO    ] severus: ====================================================
+00:45:01 [INFO    ] discord.voice_state: Connecting to voice...
+00:45:01 [INFO    ] discord.voice_state: Starting voice handshake... (connection attempt 1)
+00:45:01 [INFO    ] discord.voice_state: Voice handshake complete. Endpoint found: c-mxp03-c056ca5e.discord.media:2087
+00:45:02 [INFO    ] discord.voice_state: Voice connection complete.
+00:48:41 [INFO    ] Timer: [3ooooooooo] min=1 +10xp +5c → 1
+00:48:54 [INFO    ] Timer: mOòN . left 3ooooooooo (0 remaining)
+00:48:54 [INFO    ] Timer: 3ooooooooo empty — auto-stopping timer
+00:49:23 [INFO    ] discord.voice_state: The voice handshake is being terminated for Channel ID 1487583193438617750 (Guild ID 1104701279005069334)
+00:49:23 [INFO    ] discord.player: ffmpeg process 9332 has not terminated. Waiting to terminate...
+00:49:23 [INFO    ] discord.player: ffmpeg process 9332 should have terminated with a return code of 1.
+00:54:48 [WARNING ] severus: Disconnected from Discord gateway.
+00:54:51 [WARNING ] severus: Disconnected from Discord gateway.
+00:54:58 [WARNING ] severus: Disconnected from Discord gateway.
+00:54:58 [CRITICAL] severus: Fatal error at startup: Shard ID None WebSocket closed with 4004
+Traceback (most recent call last):
+  File "D:\Enviroment\Projects\Stduy Helper\main.py", line 260, in <module>
+    bot.run(config.TOKEN, log_handler=None)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\site-packages\discord\client.py", line 933, in run
+    asyncio.run(runner())
+    ~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python314\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\site-packages\discord\client.py", line 922, in runner
+    await self.start(token, reconnect=reconnect)
+  File "C:\Python314\Lib\site-packages\discord\client.py", line 851, in start
+    await self.connect(reconnect=reconnect)
+  File "C:\Python314\Lib\site-packages\discord\client.py", line 731, in connect
+    await self.ws.poll_event()
+  File "C:\Python314\Lib\site-packages\discord\gateway.py", line 668, in poll_event
+    raise ConnectionClosed(self.socket, shard_id=self.shard_id, code=code) from None
+discord.errors.ConnectionClosed: Shard ID None WebSocket closed with 4004

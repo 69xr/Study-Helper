@@ -67,7 +67,6 @@ COGS = [
     "cogs.automod",
     "cogs.logging.logger",
     "cogs.temprooms.rooms",
-    "cogs.temprooms.invite",
     "cogs.community.custom_commands",
     "cogs.community.autoroles",
     "cogs.community.polls",
